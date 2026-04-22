@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__web-reader__webReader",
+      "mcp__tavily__tavily_map",
+      "mcp__tavily__tavily_extract",
+      "mcp__tavily__tavily_search",
+      "mcp__playwright__browser_navigate",
+      "mcp__playwright__browser_snapshot",
+      "mcp__playwright__browser_click",
+      "mcp__playwright__browser_network_requests",
+      "mcp__playwright__browser_take_screenshot"
+    ]
+  }
+}

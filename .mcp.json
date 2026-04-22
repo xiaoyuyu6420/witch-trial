@@ -1,0 +1,34 @@
+{
+  "mcpServers": {
+    "context7": {
+      "type": "stdio",
+      "command": "cmd",
+      "args": ["/c", "npx -y @upstash/context7-mcp@latest"]
+    },
+    "sequential-thinking": {
+      "type": "stdio",
+      "command": "cmd",
+      "args": ["/c", "npx -y @modelcontextprotocol/server-sequential-thinking"]
+    },
+    "memory": {
+      "type": "stdio",
+      "command": "cmd",
+      "args": ["/c", "npx -y @modelcontextprotocol/server-memory"]
+    },
+    "puppeteer": {
+      "type": "stdio",
+      "command": "cmd",
+      "args": ["/c", "npx -y @modelcontextprotocol/server-puppeteer"]
+    },
+    "fetch": {
+      "type": "stdio",
+      "command": "cmd",
+      "args": ["/c", "mcp-server-fetch"]
+    },
+    "filesystem": {
+      "type": "stdio",
+      "command": "cmd",
+      "args": ["/c", "npx -y @modelcontextprotocol/server-filesystem", "c:\\Users\\67217\\Desktop\\mfsn-qute"]
+    }
+  }
+}

@@ -1,0 +1,13 @@
+services:
+  witch-trial:
+    build: .
+    ports:
+      - "3001:3001"
+    volumes:
+      - db-data:/app/data
+    environment:
+      - DATABASE_URL=file:./data/witch-trial.db
+      - PORT=3001
+
+volumes:
+  db-data:
