@@ -4,8 +4,8 @@ const t = {
     description: "在因子侵蚀的尽头，审判等待着你。魔法少女的魔女审判人格测试。",
   },
   welcome: {
-    badge: "MAGICAL GIRL'S",
-    title: "WITCH TRIAL",
+    badge: "魔法少女的",
+    title: "魔女审判",
     subtitle: "十三名预备魔女，一座孤岛监牢",
     startHint: "将鼠标移近此处",
     participants: "已有 {count} 人接受审判",
@@ -33,6 +33,8 @@ const t = {
     ideal: "IDEAL",
     statsInfo: "全球 {percentage}% 的被审判者与你相同（第 {count} 位 / 共 {total} 人）",
     statsShort: "全球 {percentage}% 的被审判者与你相同",
+    factorResonance: "因子共鸣度 {percentage}% — 与你命运相同的审判者",
+    factorResonanceLabel: "因子共鸣度 — 与你命运相同的审判者",
   },
   dims: {
     S1: "严厉度", S2: "直觉度", S3: "宽恕度",

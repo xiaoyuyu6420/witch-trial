@@ -33,6 +33,8 @@ const t = {
     ideal: "IDEAL",
     statsInfo: "{percentage}% of the judged worldwide share your fate (#{count} of {total})",
     statsShort: "{percentage}% of the judged worldwide share your fate",
+    factorResonance: "Factor Resonance {percentage}% — souls that share your fate",
+    factorResonanceLabel: "Factor Resonance — souls that share your fate",
   },
   dims: {
     S1: "Severity", S2: "Intuition", S3: "Forgiveness",

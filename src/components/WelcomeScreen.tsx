@@ -18,14 +18,25 @@ export default function WelcomeScreen({ onStart }: WelcomeScreenProps) {
       .catch(() => {});
   }, []);
 
+  const badge = t("welcome.badge");
+  const title = t("welcome.title");
+
   return (
     <>
-      <div className="hero-badge">{t("welcome.badge")}</div>
-      <h1 className="hero-title">{t("welcome.title")}</h1>
+      {badge && (
+        <div className="hero-badge">
+          {badge.split(/([的の])/).map((part, i) =>
+            /^[的の]$/.test(part) ? (
+              <span key={i} style={{ display: "inline-block", margin: "0 0.4em", opacity: 0.3, transform: "rotate(15deg)", fontWeight: 300 }}>{part}</span>
+            ) : part
+          )}
+        </div>
+      )}
+      <h1 className="hero-title" data-title={title}>{title}</h1>
       <div className="hero-subtitle">{t("welcome.subtitle")}</div>
 
       {count !== null && (
-        <div style={{ color: "rgba(255,255,255,0.2)", fontSize: "0.7rem", letterSpacing: "0.15em", marginBottom: "0.5rem", fontFamily: "var(--f-title)" }}>
+        <div style={{ color: "rgba(255,255,255,0.2)", fontSize: "0.7rem", letterSpacing: "0.15em", marginTop: "0.5rem", marginBottom: "0.5rem", fontFamily: "var(--f-title)" }}>
           {t("welcome.participants", { count: count.toLocaleString() })}
         </div>
       )}

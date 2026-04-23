@@ -55,7 +55,7 @@ export default function ResultScreen({ result, stats, onRestart }: ResultScreenP
   const generateShareImage = useCallback(async (): Promise<Blob | null> => {
     if (!shareCardRef.current) return null;
     try {
-      const dataUrl = await toPng(shareCardRef.current, { width: 600, height: 400, pixelRatio: 2 });
+      const dataUrl = await toPng(shareCardRef.current, { pixelRatio: 2 });
       const res = await fetch(dataUrl);
       return await res.blob();
     } catch (e) {
@@ -126,8 +126,11 @@ export default function ResultScreen({ result, stats, onRestart }: ResultScreenP
           <div className="r-slogan">{typeSlogan !== result.code ? typeSlogan : result.slogan}</div>
 
           {stats && (
-            <div className="r-stats-info">
-              {t("result.statsInfo", { percentage: stats.typePercentage, count: stats.typeCount, total: stats.totalParticipants })}
+            <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", margin: "0.8rem 0 0.3rem", padding: "0.5rem 0.8rem", background: "rgba(0,0,0,0.03)", borderRadius: 6, borderLeft: "3px solid rgba(139,0,0,0.3)" }}>
+              <div style={{ fontFamily: "var(--f-title)", fontSize: "1.1rem", fontWeight: 700, color: "#8b0000" }}>{stats.typePercentage}%</div>
+              <div style={{ fontSize: "0.7rem", color: "#888", lineHeight: 1.4, letterSpacing: "0.03em" }}>
+                {t("result.factorResonanceLabel")}
+              </div>
             </div>
           )}
 
@@ -282,34 +285,34 @@ export default function ResultScreen({ result, stats, onRestart }: ResultScreenP
         </div>
       )}
 
-      {/* Hidden share card */}
-      <div ref={shareCardRef} style={{ position: "fixed", top: "-9999px", left: "-9999px", width: 600, height: 400, background: "#050308", color: "#e6e6e6", fontFamily: "'Noto Serif SC', serif", padding: "2.5rem 2rem", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+      {/* Hidden share card — optimized for mobile screenshot (9:16) */}
+      <div ref={shareCardRef} style={{ position: "fixed", top: "-9999px", left: "-9999px", width: 390, height: 693, background: "#050308", color: "#e6e6e6", fontFamily: "'Noto Serif SC', serif", padding: "2rem 1.5rem", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
         <div>
-          <div style={{ fontFamily: "'Cinzel', serif", fontSize: "0.6rem", letterSpacing: "0.5em", color: "#d4af37", marginBottom: "0.8rem" }}>WITCH TRIAL</div>
-          <div style={{ fontSize: "2.2rem", fontWeight: 900, lineHeight: 1.1, color: "#fff", marginBottom: "0.5rem" }}>{typeName !== result.code ? typeName : result.name}</div>
-          {(typeSubtitle && typeSubtitle !== result.code) && <div style={{ fontSize: "0.9rem", color: "#888", letterSpacing: "0.15em", marginBottom: "0.3rem" }}>{typeSubtitle}</div>}
-          <div style={{ fontSize: "0.85rem", fontStyle: "italic", color: "#d4af37", marginTop: "0.5rem", lineHeight: 1.6 }}>{typeSlogan !== result.code ? typeSlogan : result.slogan}</div>
+          <div style={{ fontFamily: "'Cinzel', serif", fontSize: "0.55rem", letterSpacing: "0.5em", color: "rgba(212,175,55,0.6)", marginBottom: "1.2rem" }}>WITCH TRIAL</div>
+          <div style={{ fontSize: "1.8rem", fontWeight: 900, lineHeight: 1.15, color: "#fff", marginBottom: "0.4rem" }}>{typeName !== result.code ? typeName : result.name}</div>
+          {(typeSubtitle && typeSubtitle !== result.code) && <div style={{ fontSize: "0.75rem", color: "#888", letterSpacing: "0.15em", marginBottom: "0.3rem" }}>{typeSubtitle}</div>}
+          <div style={{ fontSize: "0.75rem", fontStyle: "italic", color: "#d4af37", marginTop: "0.8rem", lineHeight: 1.6 }}>{typeSlogan !== result.code ? typeSlogan : result.slogan}</div>
         </div>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
-          <div>
-            {typeKeywords && typeKeywords !== result.code && (
-              <div style={{ display: "flex", gap: "0.4rem", flexWrap: "wrap" }}>
-                {typeKeywords.split(/[、,，]/).map((kw: string, i: number) => (
-                  <span key={i} style={{ fontSize: "0.6rem", padding: "0.15rem 0.5rem", border: "1px solid rgba(212,175,55,0.3)", borderRadius: 999, color: "#d4af37" }}>{kw.trim()}</span>
-                ))}
+        <div>
+          {typeKeywords && typeKeywords !== result.code && (
+            <div style={{ display: "flex", gap: "0.3rem", flexWrap: "wrap", marginBottom: "1rem" }}>
+              {typeKeywords.split(/[、,，]/).map((kw: string, i: number) => (
+                <span key={i} style={{ fontSize: "0.55rem", padding: "0.15rem 0.45rem", border: "1px solid rgba(212,175,55,0.25)", borderRadius: 999, color: "rgba(212,175,55,0.7)" }}>{kw.trim()}</span>
+              ))}
+            </div>
+          )}
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: "0.8rem" }}>
+            <div>
+              <div style={{ fontFamily: "'Cinzel', serif", fontSize: "1.6rem", fontWeight: 900, color: "#d4af37" }}>{result.similarity}%</div>
+              <div style={{ fontSize: "0.5rem", color: "rgba(255,255,255,0.25)", letterSpacing: "0.15em" }}>SIMILARITY</div>
+            </div>
+            {stats && (
+              <div style={{ fontSize: "0.55rem", color: "rgba(255,255,255,0.3)", textAlign: "right", lineHeight: 1.5 }}>
+                {t("result.statsShort", { percentage: stats.typePercentage })}
               </div>
             )}
           </div>
-          <div style={{ textAlign: "right" }}>
-            <div style={{ fontFamily: "'Cinzel', serif", fontSize: "2rem", fontWeight: 900, color: "#d4af37" }}>{result.similarity}%</div>
-            <div style={{ fontSize: "0.55rem", color: "rgba(255,255,255,0.3)", letterSpacing: "0.1em" }}>SIMILARITY</div>
-          </div>
         </div>
-        {stats && (
-          <div style={{ fontSize: "0.6rem", color: "rgba(255,255,255,0.3)", borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: "0.5rem" }}>
-            {t("result.statsShort", { percentage: stats.typePercentage })}
-          </div>
-        )}
       </div>
     </div>
   );

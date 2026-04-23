@@ -4,8 +4,8 @@ const t = {
     description: "因子の侵蝕が果てる場所、審判があなたを待っている。魔法少女の魔女裁判人格テスト。",
   },
   welcome: {
-    badge: "MAGICAL GIRL'S",
-    title: "WITCH TRIAL",
+    badge: "魔法少女の",
+    title: "魔女審判",
     subtitle: "十三人の予備魔女、孤島の監牢",
     startHint: "マウスを近づけてください",
     participants: "{count}人の魂が審判を受けました",
@@ -33,6 +33,8 @@ const t = {
     ideal: "IDEAL",
     statsInfo: "世界中の{percentage}%があなたと同じ（第{count}人 / 全{total}人中）",
     statsShort: "世界中の{percentage}%があなたと同じ",
+    factorResonance: "因子共鳴度 {percentage}% — あなたと同じ運命の審判者",
+    factorResonanceLabel: "因子共鳴度 — あなたと同じ運命の審判者",
   },
   dims: {
     S1: "厳格さ", S2: "直感力", S3: "許容力",
