@@ -887,73 +887,76 @@
     }
 
     /* =========================================================
-       2. CURSOR AURA RIPPLE FIELD
-       Static dash field (Poisson-distributed positions, fixed random angles).
-       Each frame, every dash's alpha and color are modulated by a traveling
-       radial wave centered on the cursor — produces a "water ripple of colored
-       dots" effect inspired by Google Antigravity's GL particles, but in 2D.
+       2. CURSOR AURA + FLOW FIELD
+       Dashes flow along a slowly-evolving 2D noise vector field
+       (their positions and orientations are continuously updated).
+       Color/alpha/size are independently modulated by distance to
+       the cursor — bright halo near the mouse, fading to far hum.
+       Combination gives the antigravity-style "flowing colored mist".
        ========================================================= */
     const canvas = document.getElementById('abyss-canvas');
     const ctx = canvas.getContext('2d');
     let width, height;
-    // Pre-seed mouse at center so the page isn't dead before first mousemove.
     const mouse = { x: 0, y: 0, hasMoved: false };
 
     function resize() {
       width  = canvas.width  = window.innerWidth;
       height = canvas.height = window.innerHeight;
       if (!mouse.hasMoved) { mouse.x = width * 0.5; mouse.y = height * 0.45; }
-      rebuildField();
+      seedDashes();
     }
     window.addEventListener('resize', resize);
-
     window.addEventListener('mousemove', (e) => { mouse.x = e.clientX; mouse.y = e.clientY; mouse.hasMoved = true; });
     window.addEventListener('touchmove', (e) => { mouse.x = e.touches[0].clientX; mouse.y = e.touches[0].clientY; mouse.hasMoved = true; }, { passive: true });
 
-    // Jittered-grid Poisson approximation: fast, visually indistinguishable from true Poisson at this scale.
+    // Two-octave time-evolving vector field. Slight divergence allows density to swell and thin —
+    // that's the "flow" the eye reads as alive (vs. uniform translation).
+    function flowAt(x, y, t) {
+      const v1x =       Math.sin(y * 0.0027 + t * 0.00018);
+      const v1y =       Math.cos(x * 0.0021 + t * 0.00021 + 0.8);
+      const v2x = 0.4 * Math.sin(y * 0.0078 + t * 0.00040 + 1.4);
+      const v2y = 0.4 * Math.cos(x * 0.0064 + t * 0.00037 + 2.1);
+      // Multiply by speed coefficient (px/frame). 0.55 → terminal ~33 px/s at 60fps.
+      return { vx: (v1x + v2x) * 0.55, vy: (v1y + v2y) * 0.55 };
+    }
+
     let dashes = [];
-    function rebuildField() {
+    function seedDashes() {
       dashes = [];
-      // Cell size controls density. Smaller cell → denser. Tuned for 高级 feel: ~600-1100 dashes on 1440x900.
-      const cell = 34;
-      const cols = Math.ceil(width / cell) + 1;
+      // Cell ~32px → ~1200 dashes on 1440x900. Density-vs-perf sweet spot.
+      const cell = 32;
+      const cols = Math.ceil(width  / cell) + 1;
       const rows = Math.ceil(height / cell) + 1;
       for (let j = 0; j < rows; j++) {
         for (let i = 0; i < cols; i++) {
-          // Jitter within cell so it doesn't look like a grid.
-          const x = i * cell + (Math.random() * 0.85 + 0.075) * cell;
-          const y = j * cell + (Math.random() * 0.85 + 0.075) * cell;
+          const x = (i + Math.random() * 0.9 + 0.05) * cell;
+          const y = (j + Math.random() * 0.9 + 0.05) * cell;
           dashes.push({
             x, y,
-            angle: Math.random() * Math.PI,         // 0–π is enough (dashes are symmetric)
-            len:   4 + Math.random() * 5,           // 4–9 px
-            phase: Math.random() * Math.PI * 2,     // each dash's wave starts at a different phase → no concentric circle artifacts
-            speed: 0.85 + Math.random() * 0.3,      // slight per-dash wave-speed variation
+            angle: Math.random() * Math.PI * 2,    // initial — will lerp toward flow direction
+            baseLen: 4 + Math.random() * 5,        // 4–9 px
+            sizePhase: Math.random() * Math.PI * 2,
+            sizeSpeed: 0.0006 + Math.random() * 0.0008,
           });
         }
       }
     }
     resize();
 
-    // Color stops by intensity (0 = invisible base, 1 = brightest right at cursor).
-    // Brighter palette than the rest of the page — black bg requires more punch than antigravity's white bg.
     function dashColor(t, alpha) {
       let r, g, b;
-      if (t > 0.80)       { r = 252; g = 240; b = 215; }       // bright ivory (closest to cursor)
-      else if (t > 0.55)  { r = 240; g = 200; b =  90; }       // bright gold ember
-      else if (t > 0.32)  { r = 222; g = 145; b = 160; }       // luminous rose
-      else if (t > 0.14)  { r = 180; g =  88; b = 100; }       // dried crimson glow
-      else                { r = 130; g = 105; b = 115; }       // far hum
+      if (t > 0.80)       { r = 252; g = 240; b = 215; }   // ivory (peak halo)
+      else if (t > 0.55)  { r = 240; g = 200; b =  90; }   // gold ember
+      else if (t > 0.32)  { r = 222; g = 145; b = 160; }   // luminous rose
+      else if (t > 0.14)  { r = 180; g =  88; b = 100; }   // dried crimson
+      else                { r = 130; g = 105; b = 115; }   // far hum
       return `rgba(${r}, ${g}, ${b}, ${alpha})`;
     }
 
-    // Pre-tuned wave constants. Wavelength ~155 px, period ~2.0 s.
-    const WAVE_K     = 0.040;
-    const WAVE_W     = 0.0032;
-    const SIGMA      = 340;     // wider aura so it reads as a halo, not a spot
-    const SIGMA2_2   = 2 * SIGMA * SIGMA;
-    const VIS_FLOOR  = 0.06;
-    const BASE_HUM   = 0.12;    // stronger ambient floor so the field is always present, not just on hover
+    const SIGMA     = 360;
+    const SIGMA2_2  = 2 * SIGMA * SIGMA;
+    const BASE_HUM  = 0.11;
+    const VIS_FLOOR = 0.05;
 
     function animateCanvas(time) {
       ctx.clearRect(0, 0, width, height);
@@ -962,22 +965,45 @@
 
       for (let i = 0; i < dashes.length; i++) {
         const d = dashes[i];
+
+        // ── Flow: advect along the vector field ──
+        const f = flowAt(d.x, d.y, time);
+        d.x += f.vx;
+        d.y += f.vy;
+
+        // Wrap to opposite edge so the field stays uniformly populated.
+        if (d.x < -20)        d.x = width + 20;
+        else if (d.x > width + 20)  d.x = -20;
+        if (d.y < -20)        d.y = height + 20;
+        else if (d.y > height + 20) d.y = -20;
+
+        // Orient dash along the local flow direction (when flow has magnitude).
+        const speed = Math.hypot(f.vx, f.vy);
+        if (speed > 0.04) {
+          const target = Math.atan2(f.vy, f.vx);
+          // Lerp angle, handling wrap-around: rotate toward target by shortest arc.
+          let da = target - d.angle;
+          while (da >  Math.PI) da -= Math.PI * 2;
+          while (da < -Math.PI) da += Math.PI * 2;
+          d.angle += da * 0.08;
+        }
+
+        // ── Color/alpha by cursor distance ──
         const dx = d.x - mx, dy = d.y - my;
         const dist2 = dx * dx + dy * dy;
         const falloff = Math.exp(-dist2 / SIGMA2_2);
-
-        const dist = Math.sqrt(dist2);
-        const wave = 0.5 + 0.5 * Math.sin(dist * WAVE_K - time * WAVE_W * d.speed + d.phase);
-        const intensity = wave * falloff + BASE_HUM * Math.min(1, falloff * 3 + 0.25);
+        // Add a soft per-dash breathing so far-field also feels alive.
+        const breath = 0.5 + 0.5 * Math.sin(time * d.sizeSpeed + d.sizePhase);
+        const intensity = falloff * (0.55 + 0.45 * breath) + BASE_HUM * Math.min(1, falloff * 3 + 0.3);
         if (intensity < VIS_FLOOR) continue;
 
-        const alpha = Math.min(intensity * 1.1, 0.95);
-        const stretch = 1 + intensity * 0.5;
+        const alpha = Math.min(intensity * 1.15, 0.95);
+        const lenMul = 1 + intensity * 0.6 + breath * 0.15;
 
         ctx.beginPath();
         ctx.strokeStyle = dashColor(intensity, alpha);
-        ctx.lineWidth = 1.2 + intensity * 0.9;
-        const half = d.len * stretch * 0.5;
+        ctx.lineWidth   = 1.1 + intensity * 0.9;
+        const half = d.baseLen * lenMul * 0.5;
         const cosA = Math.cos(d.angle), sinA = Math.sin(d.angle);
         ctx.moveTo(d.x - cosA * half, d.y - sinA * half);
         ctx.lineTo(d.x + cosA * half, d.y + sinA * half);
