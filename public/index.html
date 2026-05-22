@@ -887,12 +887,16 @@
     }
 
     /* =========================================================
-       2. CURSOR AURA + FLOW FIELD
-       Dashes flow along a slowly-evolving 2D noise vector field
-       (their positions and orientations are continuously updated).
-       Color/alpha/size are independently modulated by distance to
-       the cursor — bright halo near the mouse, fading to far hum.
-       Combination gives the antigravity-style "flowing colored mist".
+       2. CURSOR RING — FAITHFUL PORT of antigravity.google
+       Reverse-engineered from the page's GLSL particle simulator
+       (Three.js GPGPU, 256×256 = 65k particles). Key idea:
+         • each dash has a FIXED lattice refPos
+         • visibility is a smoothstep "ring band" around the mouse
+         • position = refPos + noise displacement (small, ~30 px)
+         • each dash is oriented RADIALLY from the mouse
+         • scale lerps smoothly toward the ring-band target → soft fade
+         • color mixes between 3 palette colors via slow noise
+       2D port — no WebGL, but the same dynamics. ~1300 dashes @ 60fps.
        ========================================================= */
     const canvas = document.getElementById('abyss-canvas');
     const ctx = canvas.getContext('2d');
@@ -909,104 +913,134 @@
     window.addEventListener('mousemove', (e) => { mouse.x = e.clientX; mouse.y = e.clientY; mouse.hasMoved = true; });
     window.addEventListener('touchmove', (e) => { mouse.x = e.touches[0].clientX; mouse.y = e.touches[0].clientY; mouse.hasMoved = true; }, { passive: true });
 
-    // Two-octave time-evolving vector field. Slight divergence allows density to swell and thin —
-    // that's the "flow" the eye reads as alive (vs. uniform translation).
-    function flowAt(x, y, t) {
-      const v1x =       Math.sin(y * 0.0027 + t * 0.00018);
-      const v1y =       Math.cos(x * 0.0021 + t * 0.00021 + 0.8);
-      const v2x = 0.4 * Math.sin(y * 0.0078 + t * 0.00040 + 1.4);
-      const v2y = 0.4 * Math.cos(x * 0.0064 + t * 0.00037 + 2.1);
-      // Multiply by speed coefficient (px/frame). 0.55 → terminal ~33 px/s at 60fps.
-      return { vx: (v1x + v2x) * 0.55, vy: (v1y + v2y) * 0.55 };
+    // Ring band parameters. Visible region spans ≈ [R-2W, R+W] from cursor.
+    // R=280, W=250 → visible from 0 to ~530 px; peak ring at 280 px.
+    const RING_R = 300;
+    const RING_W = 240;
+    const RING_W2 = 110;    // inner sharper ring → "core glow"
+    const INV_R = 1 / RING_R;
+
+    function smoothstep(e0, e1, x) {
+      if (x <= e0) return 0;
+      if (x >= e1) return 1;
+      const t = (x - e0) / (e1 - e0);
+      return t * t * (3 - 2 * t);
     }
 
     let dashes = [];
     function seedDashes() {
       dashes = [];
-      // Cell ~32px → ~1200 dashes on 1440x900. Density-vs-perf sweet spot.
-      const cell = 32;
-      const cols = Math.ceil(width  / cell) + 1;
-      const rows = Math.ceil(height / cell) + 1;
-      for (let j = 0; j < rows; j++) {
-        for (let i = 0; i < cols; i++) {
-          const x = (i + Math.random() * 0.9 + 0.05) * cell;
-          const y = (j + Math.random() * 0.9 + 0.05) * cell;
+      // Lattice spacing. Larger cell = sparser & more refined.
+      const cell = 46;
+      const cols = Math.ceil(width  / cell) + 2;
+      const rows = Math.ceil(height / cell) + 2;
+      for (let j = -1; j < rows; j++) {
+        for (let i = -1; i < cols; i++) {
+          const x = (i + Math.random() * 0.95 + 0.025) * cell;
+          const y = (j + Math.random() * 0.95 + 0.025) * cell;
           dashes.push({
-            x, y,
-            angle: Math.random() * Math.PI * 2,    // initial — will lerp toward flow direction
-            baseLen: 4 + Math.random() * 5,        // 4–9 px
-            sizePhase: Math.random() * Math.PI * 2,
-            sizeSpeed: 0.0006 + Math.random() * 0.0008,
+            refX: x, refY: y,
+            n1a: x * 0.0042 + y * 0.0033,
+            n1b: y * 0.0042 - x * 0.0028,
+            n2a: x * 0.018  + y * 0.013,
+            n2b: y * 0.018  - x * 0.011,
+            colorSeed: (x * 0.0017 + y * 0.0023),
+            scale: 0,
+            // ★ FIXED random angle per dash (not radial). This is what
+            //   antigravity actually does — the radial alignment was my error.
+            baseAngle: Math.random() * Math.PI,
+            len: 3.5 + Math.random() * 3,         // smaller, more delicate
+            cOff: Math.random() * Math.PI * 2,
           });
         }
       }
     }
     resize();
 
-    function dashColor(t, alpha) {
+    // 3-color palette mix. Two-step lerp through warm ivory → gold → rose → crimson.
+    // The shader uses 3 colors mixed via single noise param; we add a 4th for depth.
+    function mixColor(t) {
+      // t in [0, 1]
+      // Stops: 0 ivory, 0.35 gold, 0.7 rose, 1 crimson
       let r, g, b;
-      if (t > 0.80)       { r = 252; g = 240; b = 215; }   // ivory (peak halo)
-      else if (t > 0.55)  { r = 240; g = 200; b =  90; }   // gold ember
-      else if (t > 0.32)  { r = 222; g = 145; b = 160; }   // luminous rose
-      else if (t > 0.14)  { r = 180; g =  88; b = 100; }   // dried crimson
-      else                { r = 130; g = 105; b = 115; }   // far hum
-      return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+      if (t < 0.35) {
+        const u = t / 0.35;
+        r = 252 + (240 - 252) * u; g = 240 + (200 - 240) * u; b = 215 + ( 90 - 215) * u;
+      } else if (t < 0.7) {
+        const u = (t - 0.35) / 0.35;
+        r = 240 + (224 - 240) * u; g = 200 + (140 - 200) * u; b =  90 + (155 -  90) * u;
+      } else {
+        const u = (t - 0.7) / 0.3;
+        r = 224 + (175 - 224) * u; g = 140 + ( 75 - 140) * u; b = 155 + ( 90 - 155) * u;
+      }
+      return [r | 0, g | 0, b | 0];
     }
-
-    const SIGMA     = 360;
-    const SIGMA2_2  = 2 * SIGMA * SIGMA;
-    const BASE_HUM  = 0.11;
-    const VIS_FLOOR = 0.05;
 
     function animateCanvas(time) {
       ctx.clearRect(0, 0, width, height);
       ctx.lineCap = 'round';
       const mx = mouse.x, my = mouse.y;
+      const tSlow = time * 0.00045;       // noise evolution rate (slow)
+      const tFast = time * 0.0014;        // mid-noise rate
+      const tColor = time * 0.00035;      // color noise rate
 
       for (let i = 0; i < dashes.length; i++) {
         const d = dashes[i];
 
-        // ── Flow: advect along the vector field ──
-        const f = flowAt(d.x, d.y, time);
-        d.x += f.vx;
-        d.y += f.vy;
+        // Ring band visibility at refPos.
+        const dx = d.refX - mx, dy = d.refY - my;
+        const dist = Math.sqrt(dx * dx + dy * dy);
 
-        // Wrap to opposite edge so the field stays uniformly populated.
-        if (d.x < -20)        d.x = width + 20;
-        else if (d.x > width + 20)  d.x = -20;
-        if (d.y < -20)        d.y = height + 20;
-        else if (d.y > height + 20) d.y = -20;
+        // Inner & outer smoothstep bands → smooth donut with soft core.
+        const tBand  = smoothstep(RING_R - RING_W  * 2, RING_R, dist) - smoothstep(RING_R, RING_R + RING_W,  dist);
+        const tCore  = smoothstep(RING_R - RING_W2 * 2, RING_R, dist) - smoothstep(RING_R, RING_R + RING_W2, dist);
+        let t = tBand * tBand + tCore * tCore * tCore * 3;
+        // Slight glow inside the ring too (so right at cursor it isn't dead-zero).
+        t += smoothstep(RING_R + RING_W2, RING_R, dist) * 0.4;
+        if (t < 0.04 && d.scale < 0.04) continue;
 
-        // Orient dash along the local flow direction (when flow has magnitude).
-        const speed = Math.hypot(f.vx, f.vy);
-        if (speed > 0.04) {
-          const target = Math.atan2(f.vy, f.vx);
-          // Lerp angle, handling wrap-around: rotate toward target by shortest arc.
-          let da = target - d.angle;
-          while (da >  Math.PI) da -= Math.PI * 2;
-          while (da < -Math.PI) da += Math.PI * 2;
-          d.angle += da * 0.08;
-        }
+        // Smooth scale toward target (~5-frame settle) — gives soft fade-in/out.
+        d.scale += (t - d.scale) * 0.18;
+        if (d.scale < 0.035) continue;
 
-        // ── Color/alpha by cursor distance ──
-        const dx = d.x - mx, dy = d.y - my;
-        const dist2 = dx * dx + dy * dy;
-        const falloff = Math.exp(-dist2 / SIGMA2_2);
-        // Add a soft per-dash breathing so far-field also feels alive.
-        const breath = 0.5 + 0.5 * Math.sin(time * d.sizeSpeed + d.sizePhase);
-        const intensity = falloff * (0.55 + 0.45 * breath) + BASE_HUM * Math.min(1, falloff * 3 + 0.3);
-        if (intensity < VIS_FLOOR) continue;
+        // Noise displacement — small (~30 px), keeps dash near its refPos but wiggling.
+        // Two octaves of summed sines: mid-freq drift + high-freq shimmer.
+        const lowX = Math.sin(d.n1a + tSlow) + 0.6 * Math.sin(d.n1b * 1.7 + tSlow * 1.3);
+        const lowY = Math.cos(d.n1b + tSlow * 1.1) + 0.6 * Math.cos(d.n1a * 1.7 + tSlow * 0.9);
+        const midX = Math.sin(d.n2a + tFast);
+        const midY = Math.cos(d.n2b + tFast * 1.2);
+        let px = d.refX + lowX * 26 + midX * 4;
+        let py = d.refY + lowY * 26 + midY * 4;
 
-        const alpha = Math.min(intensity * 1.15, 0.95);
-        const lenMul = 1 + intensity * 0.6 + breath * 0.15;
+        // Sin wave displacement on top — small lateral wiggle that scales with distance to ring.
+        const distNorm = Math.min(dist * INV_R, 1);
+        px += Math.sin(d.refX * 0.024 + time * 0.0042) * 4 * distNorm;
+        py += Math.cos(d.refY * 0.024 + time * 0.0031) * 4 * distNorm;
+
+        // Mild pull toward mouse for in-ring dashes (gives "compression"/depth).
+        const pull = Math.pow(d.scale, 0.75) * 0.08;
+        px += (mx - px) * pull;
+        py += (my - py) * pull;
+
+        // Orientation: FIXED random angle per dash + small noise wobble.
+        // No radial alignment — that read as a porcupine, not as refined drift.
+        const wobble = Math.sin(d.n2a + tSlow * 0.7) * 0.35;
+        const angle = d.baseAngle + wobble;
+
+        // Color: noise → palette mix. Each dash has its own offset for variation.
+        const cNoise = 0.5 + 0.5 * Math.sin(d.colorSeed + tColor + d.cOff);
+        const [r, g, b] = mixColor(cNoise);
+
+        const alpha = Math.min(d.scale * 1.05, 0.9);
+        const len = d.len * (0.65 + d.scale * 0.7);
+        const half = len * 0.5;
+        const cosA = Math.cos(angle), sinA = Math.sin(angle);
 
         ctx.beginPath();
-        ctx.strokeStyle = dashColor(intensity, alpha);
-        ctx.lineWidth   = 1.1 + intensity * 0.9;
-        const half = d.baseLen * lenMul * 0.5;
-        const cosA = Math.cos(d.angle), sinA = Math.sin(d.angle);
-        ctx.moveTo(d.x - cosA * half, d.y - sinA * half);
-        ctx.lineTo(d.x + cosA * half, d.y + sinA * half);
+        ctx.strokeStyle = `rgba(${r},${g},${b},${alpha})`;
+        ctx.lineWidth = 0.9 + d.scale * 0.6;
+        ctx.moveTo(px - cosA * half, py - sinA * half);
+        ctx.lineTo(px + cosA * half, py + sinA * half);
         ctx.stroke();
       }
       requestAnimationFrame(animateCanvas);
