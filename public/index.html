@@ -52,6 +52,7 @@
       --bg: #030303;
       --fg: #EFEFEF;
       --blood: #b80a1f;
+      --gold: #d4af37;
       --ash: #888888;
       --font-serif: 'Cinzel', 'Noto Serif SC', serif;
       --font-mono: 'Space Mono', monospace;
@@ -108,7 +109,7 @@
     .hud-frame {
       position: absolute;
       inset: 2rem;
-      border: 1px solid rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(212, 175, 55, 0.08);
       z-index: 5;
       pointer-events: none;
       display: flex;
@@ -116,20 +117,23 @@
       justify-content: space-between;
     }
 
+    /* Ritual sigil at each corner (cross-in-circle): replaces tactical L-bracket */
     .hud-corners::before, .hud-corners::after,
     .hud-frame::before, .hud-frame::after {
       content: ''; position: absolute;
-      width: 15px; height: 15px;
-      border: 2px solid var(--blood);
-      filter: drop-shadow(0 0 6px rgba(184, 10, 31, 0.6));
+      width: 22px; height: 22px;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 22 22'%3E%3Cline x1='11' y1='2' x2='11' y2='20' stroke='%23d4af37' stroke-width='0.7'/%3E%3Cline x1='2' y1='11' x2='20' y2='11' stroke='%23d4af37' stroke-width='0.7'/%3E%3Ccircle cx='11' cy='11' r='3.4' fill='none' stroke='%23d4af37' stroke-width='0.7'/%3E%3Ccircle cx='11' cy='11' r='0.9' fill='%23d4af37'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: center;
+      filter: drop-shadow(0 0 4px rgba(212, 175, 55, 0.45));
       transition: all 0.5s ease;
     }
-    
-    .hud-frame::before { top: -2px; left: -2px; border-right: none; border-bottom: none; }
-    .hud-frame::after { top: -2px; right: -2px; border-left: none; border-bottom: none; }
+
+    .hud-frame::before { top: -11px; left: -11px; }
+    .hud-frame::after  { top: -11px; right: -11px; }
     .hud-corners { position: absolute; inset: 0; }
-    .hud-corners::before { bottom: -2px; left: -2px; border-right: none; border-top: none; }
-    .hud-corners::after { bottom: -2px; right: -2px; border-left: none; border-top: none; }
+    .hud-corners::before { bottom: -11px; left: -11px; }
+    .hud-corners::after  { bottom: -11px; right: -11px; }
 
     .hud-top, .hud-bottom {
       display: flex; justify-content: space-between;
@@ -143,15 +147,15 @@
     .status-blink {
       display: inline-block;
       width: 6px; height: 6px;
-      background: var(--blood);
+      background: var(--gold);
       border-radius: 50%;
       margin-right: 8px;
       animation: blink 2.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
     }
 
     @keyframes blink {
-      0%, 100% { opacity: 1; box-shadow: 0 0 12px 2px var(--blood); }
-      50% { opacity: 0.2; box-shadow: 0 0 2px var(--blood); }
+      0%, 100% { opacity: 1; box-shadow: 0 0 12px 2px var(--gold); }
+      50% { opacity: 0.2; box-shadow: 0 0 2px var(--gold); }
     }
 
     /* =========================================
@@ -179,8 +183,8 @@
 
     .giant-text.kanji {
       font-size: clamp(6rem, 10vw, 12rem);
-      -webkit-text-stroke: 1px var(--blood);
-      text-shadow: 0 0 30px rgba(184, 10, 31, 0.3);
+      -webkit-text-stroke: 1px var(--gold);
+      text-shadow: 0 0 30px rgba(212, 175, 55, 0.25);
       margin-left: 20%;
       margin-top: -5%;
       opacity: 0.85;
@@ -190,7 +194,7 @@
     .particle-no {
       font-size: 0.7em;
       opacity: 0.6;
-      -webkit-text-stroke: 1px var(--blood);
+      -webkit-text-stroke: 1px var(--gold);
       display: inline-block;
       transform: translateY(-0.05em);
       margin-left: 0.05em;
@@ -241,7 +245,7 @@
     .narrative {
       position: relative;
       padding-left: 2rem;
-      border-left: 3px solid var(--blood);
+      border-left: 2px solid var(--gold);
       min-height: 200px;
     }
 
@@ -528,9 +532,9 @@
       padding: 0;
     }
     .fs-btn:hover {
-      border-color: rgba(184,10,31,0.5);
+      border-color: rgba(212, 175, 55, 0.5);
       color: rgba(255,255,255,0.9);
-      background: rgba(184,10,31,0.1);
+      background: rgba(212, 175, 55, 0.1);
     }
     .fs-btn svg { width: 14px; height: 14px; }
 
@@ -550,13 +554,13 @@
     .fs-prompt-icon {
       width: 60px;
       height: 60px;
-      border: 2px solid rgba(184,10,31,0.5);
+      border: 2px solid rgba(212, 175, 55, 0.5);
       border-radius: 12px;
       margin-bottom: 1.5rem;
       display: flex;
       align-items: center;
       justify-content: center;
-      color: rgba(184,10,31,0.8);
+      color: rgba(212, 175, 55, 0.85);
     }
     .fs-prompt-title {
       font-family: var(--font-serif);
@@ -650,12 +654,12 @@
   <div class="hud-frame">
     <div class="hud-corners"></div>
     <div class="hud-top">
-      <div><span class="status-blink"></span>SYSTEM ONLINE // TYPE_ANALYSIS_READY</div>
+      <div><span class="status-blink"></span>INQUISITION OPEN · 审判庭 · 准备就绪</div>
       <div id="live-time">00:00:00:00</div>
     </div>
     <div class="hud-bottom">
-      <div>PERSONALITY PROFILING SYSTEM</div>
-      <div>FILE: WITCH_ARCHETYPE_TEST</div>
+      <div>CODEX · 魔女审判书 序章</div>
+      <div>FOLIO · NO. 0451</div>
     </div>
   </div>
 
@@ -694,9 +698,9 @@
       zh: {
         loader: 'WITCH TYPOLOGY',
         verify: 'ANALYSIS READY',
-        hudTop: 'SYSTEM ONLINE // TYPE_ANALYSIS_READY',
-        hudBottomLeft: 'PERSONALITY PROFILING SYSTEM',
-        hudBottomRight: 'FILE: WITCH_ARCHETYPE_TEST',
+        hudTop: 'INQUISITION OPEN · 审判庭 · 准备就绪',
+        hudBottomLeft: 'CODEX · 魔女审判书 序章',
+        hudBottomRight: 'FOLIO · NO. 0451',
         marquee: '那是一个，很久很久以前的故事 • 曾经在那座岛上，有许多魔女和睦地生活在一起 • 魔女们天生拥有魔法的力量 • 并发展出了独属于她们的文明 • 她们偶尔与来到岛上的人类接触 • 却始终避免与外界打交道，过着平静的生活 • 但—— • 和平的日常，迎来了终结 • 人类的军队出现了 • 他们捕捉、杀害魔女们，还破坏了岛屿 • 活下来的是统治魔女之岛的大魔女中的一人 • 年纪最小，却最擅长魔法的——雪 • 只有小雪一人幸存 • 她决心为同胞复仇 • 为了让人们遭受和魔女们同样的命运 • 她剥裂自己的灵魂 • 将其转化为魔女因子并散播给人类 • 这是一种诅咒 • 能让人类变成自己创造出来的幻想怪物——【魔女】，并最终死去 • 她在复仇心的支配下 • 将一个捡来的人类少女 • 梅露露当作实验体，完成了术法 • 虽然因为人类的繁殖力太强 • 要让每个人都感染魔女因子需要很长时间 • 但她始终没有放弃 • 许多年后 • 当几乎所有人类都成功植入了魔女因子时 • 她遇见了两个少女 • 那就是艾玛和希罗 • 在与她们心灵相通的过程中 • 小雪心中的复仇之火逐渐变得黯淡 • 她的内心产生了迷茫 • 但是她无法停下 • 她不可以停下 • 所以，她把一切都托付给了艾玛 • 将人类的命运以及自己的复仇计划 • 如同将赌注交给命运 • 她把自己精心铺陈的计划 • 托付给了他人之手 • 最终 • 我终究还是没有做到 • 是太过漫长的岁月让感情渐渐麻木 • 还是我与人类交集得太深 • 我的复仇之心已经锈蚀了 • 岛上的魔女们会不会笑我呢 • 那些变成魔女、因此死去的人类们 • 会不会怨恨我呢 • 即便如此 • 此刻我只想 • 任由自己沉浸在这温柔的浅眠之中—— •',
         kanji: '魔女审判',
         title: '测测你是哪位魔法少女？',
@@ -709,9 +713,9 @@
       tw: {
         loader: 'WITCH TYPOLOGY',
         verify: 'ANALYSIS READY',
-        hudTop: 'SYSTEM ONLINE // TYPE_ANALYSIS_READY',
-        hudBottomLeft: 'PERSONALITY PROFILING SYSTEM',
-        hudBottomRight: 'FILE: WITCH_ARCHETYPE_TEST',
+        hudTop: 'INQUISITION OPEN · 審判庭 · 準備就緒',
+        hudBottomLeft: 'CODEX · 魔女審判書 序章',
+        hudBottomRight: 'FOLIO · NO. 0451',
         marquee: '那是一个，很久很久以前的故事 • 曾经在那座岛上，有许多魔女和睦地生活在一起 • 魔女们天生拥有魔法的力量 • 并发展出了独属于她们的文明 • 她们偶尔与来到岛上的人类接触 • 却始终避免与外界打交道，过着平静的生活 • 但—— • 和平的日常，迎来了终结 • 人类的军队出现了 • 他们捕捉、杀害魔女们，还破坏了岛屿 • 活下来的是统治魔女之岛的大魔女中的一人 • 年纪最小，却最擅长魔法的——雪 • 只有小雪一人幸存 • 她决心为同胞复仇 • 为了让人们遭受和魔女们同样的命运 • 她剥裂自己的灵魂 • 将其转化为魔女因子并散播给人类 • 这是一种诅咒 • 能让人类变成自己创造出来的幻想怪物——【魔女】，并最终死去 • 她在复仇心的支配下 • 将一个捡来的人类少女 • 梅露露当作实验体，完成了术法 • 虽然因为人类的繁殖力太强 • 要让每个人都感染魔女因子需要很长时间 • 但她始终没有放弃 • 许多年后 • 当几乎所有人类都成功植入了魔女因子时 • 她遇见了两个少女 • 那就是艾玛和希罗 • 在与她们心灵相通的过程中 • 小雪心中的复仇之火逐渐变得黯淡 • 她的内心产生了迷茫 • 但是她无法停下 • 她不可以停下 • 所以，她把一切都托付给了艾玛 • 将人类的命运以及自己的复仇计划 • 如同将赌注交给命运 • 她把自己精心铺陈的计划 • 托付给了他人之手 • 最终 • 我终究还是没有做到 • 是太过漫长的岁月让感情渐渐麻木 • 还是我与人类交集得太深 • 我的复仇之心已经锈蚀了 • 岛上的魔女们会不会笑我呢 • 那些变成魔女、因此死去的人类们 • 会不会怨恨我呢 • 即便如此 • 此刻我只想 • 任由自己沉浸在这温柔的浅眠之中—— •',
         kanji: '魔女審判',
         title: '測測你是哪位魔法少女？',
@@ -724,9 +728,9 @@
       en: {
         loader: 'WITCH TYPOLOGY',
         verify: 'ANALYSIS READY',
-        hudTop: 'SYSTEM ONLINE // TYPE_ANALYSIS_READY',
-        hudBottomLeft: 'PERSONALITY PROFILING SYSTEM',
-        hudBottomRight: 'FILE: WITCH_ARCHETYPE_TEST',
+        hudTop: 'INQUISITION OPEN · TRIBUNAL READY',
+        hudBottomLeft: 'CODEX · WITCH TRIAL · FOLIO I',
+        hudBottomRight: 'CASE FILE · NO. 0451',
         marquee: 'That is a story from a long, long time ago • Once upon a time, many witches lived peacefully together on that island • Witches were born with magical powers • And developed a civilization uniquely their own • They occasionally interacted with humans who came to the island • But always avoided dealing with the outside world, living a quiet life • However— • The peaceful everyday life came to an end • Human armies appeared • They captured and killed the witches, and destroyed the island • The one who survived was one of the Great Witches who ruled the Island of Witches • The youngest, yet most adept at magic—Yuki • Only little Yuki survived • She resolved to avenge her compatriots • To make humans suffer the same fate as the witches • She tore apart her own soul • Transforming it into the Witch Factor and scattering it among humans • This is a curse • That turns humans into the fantasy monsters she created—[Witches], and eventually die • Driven by vengeance • She used a human girl she picked up • Meruru, as a test subject, and completed the spell • Although because human reproduction is too strong • It would take a long time to infect everyone with the Witch Factor • She never gave up • Many years later • When almost all humans had successfully been implanted with the Witch Factor • She met two girls • They were Emma and Hiro • In the process of connecting with their hearts • The fire of revenge in Yuki\'s heart gradually dimmed • Confusion arose in her heart • But she couldn\'t stop • She must not stop • So, she entrusted everything to Emma • Entrusting the fate of humanity and her revenge plan • Like handing over a bet to destiny • She entrusted her carefully laid plan • Into the hands of others • In the end • I still couldn\'t do it • Was it the too long passage of time that made my feelings gradually numb • Or did I get too deeply involved with humans • My heart of vengeance has rusted • Will the witches on the island laugh at me • Those humans who turned into witches and died because of it • Will they resent me • Even so • Right now I just want • To let myself sink into this gentle shallow sleep— •',
         kanji: 'WITCH TRIAL',
         title: 'Which Magical Girl Are You?',
@@ -739,9 +743,9 @@
       jp: {
         loader: '魔女タイプ診断',
         verify: '診断完了',
-        hudTop: 'SYSTEM ONLINE // TYPE_ANALYSIS_READY',
-        hudBottomLeft: '個性解析システム',
-        hudBottomRight: 'FILE: 魔女原型テスト',
+        hudTop: 'INQUISITION OPEN · 審判廷 起動',
+        hudBottomLeft: 'CODEX · 魔女審判書 序章',
+        hudBottomRight: 'FOLIO · NO. 0451',
         marquee: 'それは、ずっとずっと昔の物語 • かつてその島には、多くの魔女たちが平和に暮らしていた • 魔女たちは生まれながらにして魔法の力を持ち • 彼女たち独自の文明を築き上げた • 島を訪れる人間と時折交流することはあったが • 常に外界との関わりを避け、静かな生活を送っていた • しかし—— • 平和な日常は終わりを告げた • 人間の軍隊が現れたのだ • 彼らは魔女たちを捕らえ、殺し、島を破壊した • 生き残ったのは、魔女の島を統べる大魔女の一人 • 最年少でありながら、最も魔法に長けていた——ユキ • 小さなユキだけが生き残った • 彼女は同胞の復讐を誓った • 人間たちに魔女と同じ運命を味わわせるために • 彼女は自らの魂を裂き • それを魔女因子に変えて人間たちにばら撒いた • これは呪い • 人間を彼女が創り出した幻想の怪物——【魔女】に変え、最終的に死に至らしめる呪い • 復讐心に支配された彼女は • 拾った人間の少女 • メルルを実験体とし、術式を完成させた • 人間の繁殖力があまりにも強いため • 全員に魔女因子を感染させるには長い時間がかかるが • 彼女は決して諦めなかった • 何年も後 • ほぼすべての人間が魔女因子の植え付けに成功した時 • 彼女は二人の少女に出会った • それがエマとヒロだった • 彼女たちと心を通わせる中で • ユキの心にある復讐の炎は次第に暗くなっていった • 彼女の心に迷いが生じた • しかし、彼女は止まることができなかった • 止まってはいけなかった • だから、彼女はすべてをエマに託した • 人類の運命と自らの復讐計画を • まるで運命に賭けを預けるかのように • 彼女は緻密に練り上げた計画を • 他者の手に委ねた • 結局 • 私はどうしてもできなかった • 長すぎる歳月が感情を麻痺させたのか • それとも人間と深く関わりすぎたのか • 私の復讐心は錆びついてしまった • 島の魔女たちは私を笑うだろうか • 魔女になり、そのために死んでいった人間たちは • 私を恨むだろうか • それでも • 今はただ • この優しい浅い眠りに身を委ねたい—— •',
         kanji: '魔女裁判',
         title: 'あなたはどの魔法少女タイプ？',
@@ -917,7 +921,7 @@
         this.vx = (Math.random() - 0.5) * 2;
         this.vy = (Math.random() - 0.5) * 2;
         this.life = Math.random() * 0.5 + 0.1;
-        this.color = Math.random() > 0.85 ? '#b80a1f' : '#333333';
+        this.color = Math.random() > 0.85 ? '#d4af37' : '#333333';
         this.size = Math.random() * 2;
         this.history = [];
       }
