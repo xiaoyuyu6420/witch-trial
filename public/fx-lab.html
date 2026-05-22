@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>FX LAB · WITCH TRIAL</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600&family=Noto+Serif+SC:wght@300;500&display=swap" rel="stylesheet">
+<style>
+  :root { --gold: #d4af37; --bg: #050308; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 100%; height: 100%; background: var(--bg); color: #d4af37; font-family: 'Cinzel', serif; overflow: hidden; cursor: crosshair; }
+  canvas { position: fixed; inset: 0; z-index: 1; }
+  .picker {
+    position: fixed; top: 1.2rem; left: 50%; transform: translateX(-50%); z-index: 10;
+    display: flex; gap: 0.5rem; padding: 0.4rem;
+    background: rgba(5, 3, 8, 0.7); backdrop-filter: blur(8px);
+    border: 1px solid rgba(212, 175, 55, 0.15); border-radius: 4px;
+  }
+  .picker button {
+    background: transparent; border: 1px solid rgba(212,175,55,0.18); color: rgba(255,255,255,0.45);
+    padding: 0.5rem 1.1rem; font-family: 'Cinzel', serif; letter-spacing: 0.18em; font-size: 0.72rem;
+    cursor: pointer; transition: all 0.3s ease; font-weight: 400;
+  }
+  .picker button:hover { color: rgba(212,175,55,0.85); border-color: rgba(212,175,55,0.4); }
+  .picker button.active { color: #f0e2c8; border-color: var(--gold); background: rgba(212,175,55,0.08); }
+  .meta { position: fixed; bottom: 1.5rem; left: 50%; transform: translateX(-50%); z-index: 10; text-align: center; pointer-events: none; }
+  .meta__title { color: rgba(212,175,55,0.75); font-size: 0.75rem; letter-spacing: 0.4em; }
+  .meta__sub { color: rgba(255,255,255,0.3); font-size: 0.6rem; letter-spacing: 0.25em; margin-top: 0.5rem; font-family: 'Noto Serif SC', serif; }
+  .hint { position: fixed; top: 50%; left: 2rem; transform: translateY(-50%); z-index: 10; pointer-events: none;
+          color: rgba(255,255,255,0.18); font-size: 0.65rem; letter-spacing: 0.25em; writing-mode: vertical-rl; }
+  /* dim cursor on touch — keep crosshair on desktop */
+  @media (pointer: coarse) { body { cursor: default; } }
+</style>
+</head>
+<body>
+  <canvas id="c"></canvas>
+  <div class="picker">
+    <button data-fx="halo">A · HALO</button>
+    <button data-fx="ripple">B · RITUAL RING</button>
+    <button data-fx="ink">C · INK TRAIL</button>
+    <button data-fx="aurora">D · MIST RIBBON</button>
+  </div>
+  <div class="meta">
+    <div class="meta__title" id="metaTitle">A · SOFT HALO GLOW</div>
+    <div class="meta__sub" id="metaSub">无粒子，单一径向辉光，缓慢呼吸</div>
+  </div>
+  <div class="hint">MOVE CURSOR · COMPARE</div>
+
+<script>
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+let w, h;
+function resize() { w = canvas.width = innerWidth; h = canvas.height = innerHeight; }
+addEventListener('resize', resize);
+resize();
+
+const mouse = { x: w * 0.5, y: h * 0.45, history: [] };
+addEventListener('mousemove', (e) => { mouse.x = e.clientX; mouse.y = e.clientY; });
+addEventListener('touchmove', (e) => { if (e.touches[0]) { mouse.x = e.touches[0].clientX; mouse.y = e.touches[0].clientY; } }, { passive: true });
+
+const META = {
+  halo:   { title: 'A · SOFT HALO GLOW',     sub: '无粒子。单一径向辉光，缓慢呼吸。最克制的方向。' },
+  ripple: { title: 'B · RITUAL RING',        sub: '探测器/法阵脉冲。同心圆环以光标为锚向外扩散，自然消散。' },
+  ink:    { title: 'C · INK TRAIL',          sub: '书法笔触。光标拖尾绘出三层粗细错位的金色墨线，逐渐淡出。' },
+  aurora: { title: 'D · MIST RIBBON',        sub: '三条带状光雾横贯画面，被光标推开。柔焦、流动、占据整屏。' },
+};
+
+let currentFx = 'halo';
+function setFx(name) {
+  currentFx = name;
+  document.querySelectorAll('.picker button').forEach(b => b.classList.toggle('active', b.dataset.fx === name));
+  document.getElementById('metaTitle').textContent = META[name].title;
+  document.getElementById('metaSub').textContent = META[name].sub;
+  ctx.clearRect(0, 0, w, h);                  // reset between effects
+  ripple.pulses.length = 0;
+  mouse.history.length = 0;
+  // Seed an initial pulse / history at current cursor so something is visible on switch.
+  if (name === 'ripple') {
+    ripple.pulses.push({ x: mouse.x, y: mouse.y, born: performance.now() - 600 });
+    ripple.pulses.push({ x: mouse.x, y: mouse.y, born: performance.now() - 1200 });
+    ripple.lastSpawn = performance.now();
+  }
+  if (name === 'ink') {
+    // Pre-seed a small arc of history so trail is visible immediately
+    const t = performance.now();
+    for (let i = 0; i < 12; i++) {
+      const a = i / 12;
+      mouse.history.push({ x: mouse.x + Math.cos(a * 6) * 40 * a, y: mouse.y + Math.sin(a * 6) * 40 * a, t: t - 1500 * (1 - a) });
+    }
+  }
+}
+document.querySelectorAll('.picker button').forEach((b) => b.addEventListener('click', () => setFx(b.dataset.fx)));
+setFx('halo');
+
+/* ──────────────────────────────────────────────────────────────
+   A · HALO — 单一径向辉光
+   Two layered radial gradients + a tiny bright core. Slow breath.
+   ────────────────────────────────────────────────────────────── */
+function drawHalo(time) {
+  ctx.clearRect(0, 0, w, h);
+  const breath = 0.85 + 0.15 * Math.sin(time * 0.0011);
+
+  // Outer dim halo — wide, cool fall-off into the deep
+  const r2 = 620 * breath;
+  const g2 = ctx.createRadialGradient(mouse.x, mouse.y, 80, mouse.x, mouse.y, r2);
+  g2.addColorStop(0,    'rgba(180, 100, 130, 0.22)');
+  g2.addColorStop(0.45, 'rgba(130,  70, 105, 0.12)');
+  g2.addColorStop(1,    'rgba(0,     0,   0, 0)');
+  ctx.fillStyle = g2;
+  ctx.fillRect(0, 0, w, h);
+
+  // Mid warm halo — gold
+  const r1 = 310 * breath;
+  const g1 = ctx.createRadialGradient(mouse.x, mouse.y, 0, mouse.x, mouse.y, r1);
+  g1.addColorStop(0,    'rgba(240, 200, 100, 0.38)');
+  g1.addColorStop(0.5,  'rgba(212, 175,  55, 0.14)');
+  g1.addColorStop(1,    'rgba(0,     0,   0, 0)');
+  ctx.fillStyle = g1;
+  ctx.fillRect(0, 0, w, h);
+
+  // Tiny bright nucleus
+  const g0 = ctx.createRadialGradient(mouse.x, mouse.y, 0, mouse.x, mouse.y, 28);
+  g0.addColorStop(0, 'rgba(252, 240, 215, 0.7)');
+  g0.addColorStop(1, 'rgba(252, 240, 215, 0)');
+  ctx.fillStyle = g0;
+  ctx.fillRect(0, 0, w, h);
+}
+
+/* ──────────────────────────────────────────────────────────────
+   B · RITUAL RING — 同心圆环脉冲
+   Pulses spawn periodically from cursor; each expands and fades.
+   Movement triggers extra pulses → ritual-ping responsiveness.
+   ────────────────────────────────────────────────────────────── */
+const ripple = { pulses: [], lastSpawn: 0, lastX: 0, lastY: 0 };
+function drawRipple(time) {
+  ctx.clearRect(0, 0, w, h);
+
+  // Spawn rule: every 1.4 s when idle, plus extra pulses on movement.
+  const dx = mouse.x - ripple.lastX, dy = mouse.y - ripple.lastY;
+  const moved = Math.hypot(dx, dy) > 32;
+  if (moved || time - ripple.lastSpawn > 1400) {
+    ripple.pulses.push({ x: mouse.x, y: mouse.y, born: time });
+    ripple.lastSpawn = time;
+    ripple.lastX = mouse.x;
+    ripple.lastY = mouse.y;
+    if (ripple.pulses.length > 8) ripple.pulses.shift();
+  }
+
+  for (const p of ripple.pulses) {
+    const age = (time - p.born) / 2000;       // 2 s lifetime
+    if (age >= 1) continue;
+    const eased = 1 - Math.pow(1 - age, 2.4);
+    const r = eased * 360;
+    const alpha = Math.pow(1 - age, 1.6) * 0.55;
+
+    // Outer ring — gold
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
+    ctx.strokeStyle = `rgba(212, 175, 55, ${alpha})`;
+    ctx.lineWidth = 1.4;
+    ctx.stroke();
+
+    // Inner ring — dusky rose, half radius, slower
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, r * 0.62, 0, Math.PI * 2);
+    ctx.strokeStyle = `rgba(180,  88, 110, ${alpha * 0.65})`;
+    ctx.lineWidth = 1;
+    ctx.stroke();
+  }
+  ripple.pulses = ripple.pulses.filter((p) => time - p.born < 2000);
+
+  // Central anchor mark
+  ctx.beginPath();
+  ctx.arc(mouse.x, mouse.y, 4, 0, Math.PI * 2);
+  ctx.fillStyle = 'rgba(252, 240, 215, 0.85)';
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(mouse.x, mouse.y, 12, 0, Math.PI * 2);
+  ctx.strokeStyle = 'rgba(212, 175, 55, 0.35)';
+  ctx.lineWidth = 0.8;
+  ctx.stroke();
+}
+
+/* ──────────────────────────────────────────────────────────────
+   C · INK TRAIL — 书法墨线拖尾
+   Cursor history → 3 parallel offset-stroke layers, age-based alpha.
+   ────────────────────────────────────────────────────────────── */
+function drawInk(time) {
+  // Slow trail fade — background self-darkens, leaves residue strokes
+  ctx.fillStyle = 'rgba(5, 3, 8, 0.07)';
+  ctx.fillRect(0, 0, w, h);
+
+  mouse.history.push({ x: mouse.x, y: mouse.y, t: time });
+  while (mouse.history.length && time - mouse.history[0].t > 1800) mouse.history.shift();
+  if (mouse.history.length < 2) return;
+
+  const trails = [
+    { off:  0, width: 2.4, mul: 1.0,  color: '212, 175,  55' }, // gold spine
+    { off: -3, width: 1.0, mul: 0.55, color: '240, 200, 110' }, // gold echo
+    { off:  3, width: 0.8, mul: 0.45, color: '180,  88, 110' }, // rose shadow
+  ];
+  ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+
+  for (const t of trails) {
+    for (let i = 1; i < mouse.history.length; i++) {
+      const p0 = mouse.history[i - 1], p1 = mouse.history[i];
+      const age = (time - p1.t) / 1800;
+      const alpha = Math.pow(1 - age, 1.4) * t.mul * 0.8;
+      if (alpha < 0.01) continue;
+      const dx = p1.x - p0.x, dy = p1.y - p0.y;
+      const len = Math.hypot(dx, dy) || 1;
+      const nx = -dy / len, ny = dx / len;
+      ctx.beginPath();
+      ctx.moveTo(p0.x + nx * t.off, p0.y + ny * t.off);
+      ctx.lineTo(p1.x + nx * t.off, p1.y + ny * t.off);
+      ctx.strokeStyle = `rgba(${t.color}, ${alpha})`;
+      ctx.lineWidth = t.width;
+      ctx.stroke();
+    }
+  }
+}
+
+/* ──────────────────────────────────────────────────────────────
+   D · MIST RIBBON — 横贯光雾带
+   3 horizontal ribbons described by sine sums; cursor pushes them
+   away locally (repulsion field). Blurred outer + sharp inner pass.
+   ────────────────────────────────────────────────────────────── */
+const aurora = {
+  ribbons: [
+    { yFrac: 0.36, ampA: 70,  ampB: 28, freqA: 0.004,  freqB: 0.011, speed: 0.00018, color: '212, 175,  55', width: 22 },
+    { yFrac: 0.55, ampA: 55,  ampB: 22, freqA: 0.0033, freqB: 0.013, speed: 0.00012, color: '180,  88, 110', width: 18 },
+    { yFrac: 0.74, ampA: 80,  ampB: 30, freqA: 0.0045, freqB: 0.009, speed: 0.00021, color: '120,  60, 100', width: 26 },
+  ]
+};
+function drawAurora(time) {
+  ctx.clearRect(0, 0, w, h);
+  for (const r of aurora.ribbons) {
+    const baseY = h * r.yFrac;
+    const pts = [];
+    for (let x = -60; x <= w + 60; x += 14) {
+      let y = baseY + Math.sin(x * r.freqA + time * r.speed) * r.ampA
+                    + Math.sin(x * r.freqB + time * r.speed * 1.7 + 1.3) * r.ampB;
+      // Cursor repulsion within 240 px radius
+      const dx = x - mouse.x, dy = y - mouse.y;
+      const dist = Math.hypot(dx, dy);
+      if (dist < 240) {
+        const push = (1 - dist / 240) * 70;
+        y += Math.sign(dy) * push;
+      }
+      pts.push({ x, y });
+    }
+
+    // Outer blurred halo
+    ctx.save();
+    ctx.filter = 'blur(10px)';
+    ctx.strokeStyle = `rgba(${r.color}, 0.35)`;
+    ctx.lineWidth = r.width;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(pts[0].x, pts[0].y);
+    for (let i = 1; i < pts.length - 1; i++) {
+      const xc = (pts[i].x + pts[i + 1].x) / 2;
+      const yc = (pts[i].y + pts[i + 1].y) / 2;
+      ctx.quadraticCurveTo(pts[i].x, pts[i].y, xc, yc);
+    }
+    ctx.stroke();
+    ctx.restore();
+
+    // Inner sharp line
+    ctx.strokeStyle = `rgba(${r.color}, 0.7)`;
+    ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    ctx.moveTo(pts[0].x, pts[0].y);
+    for (let i = 1; i < pts.length - 1; i++) {
+      const xc = (pts[i].x + pts[i + 1].x) / 2;
+      const yc = (pts[i].y + pts[i + 1].y) / 2;
+      ctx.quadraticCurveTo(pts[i].x, pts[i].y, xc, yc);
+    }
+    ctx.stroke();
+  }
+}
+
+/* ─── Main loop ─── */
+function loop(time) {
+  switch (currentFx) {
+    case 'halo':   drawHalo(time); break;
+    case 'ripple': drawRipple(time); break;
+    case 'ink':    drawInk(time); break;
+    case 'aurora': drawAurora(time); break;
+  }
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
