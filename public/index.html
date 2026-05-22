@@ -600,6 +600,160 @@
       opacity: 0.6;
     }
     .fs-prompt-skip:hover { opacity: 1; }
+
+    /* =========================================
+       7. HERO 2.0 — codex-ritual landing
+       Overrides the older .content-wrapper / .narrative layout
+       and the dual-line giant background text. Single centered
+       hero stack, single subdued kanji ghost behind it.
+       ========================================= */
+    .bg-text-container {
+      position: absolute; inset: 0; z-index: 0;
+      display: flex; align-items: center; justify-content: center;
+      pointer-events: none;
+    }
+    .bg-text-container .giant-text.kanji {
+      font-family: var(--font-body);
+      font-size: clamp(8rem, 22vw, 22rem);
+      font-weight: 900;
+      letter-spacing: 0.08em;
+      color: transparent;
+      -webkit-text-stroke: 1px var(--gold);
+      text-shadow: none;
+      opacity: 0.06;
+      margin: 0;
+      white-space: nowrap;
+    }
+
+    .hero {
+      position: absolute; top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      width: min(640px, 86vw);
+      z-index: 20;
+      display: flex; flex-direction: column;
+      align-items: center; text-align: center;
+      gap: 1.6rem;
+    }
+
+    .hero__overline {
+      font-family: var(--font-serif);
+      font-size: 0.66rem;
+      letter-spacing: 0.55em;
+      color: var(--gold);
+      opacity: 0.72;
+      padding-left: 0.55em;
+    }
+
+    .hero__eyebrow {
+      font-family: var(--font-serif);
+      font-size: 0.6rem;
+      letter-spacing: 0.7em;
+      color: rgba(255, 255, 255, 0.4);
+      padding-left: 0.7em;
+      margin-bottom: -0.5rem;
+    }
+
+    .hero__title {
+      font-family: var(--font-body);
+      font-size: clamp(2.8rem, 6.2vw, 4.6rem);
+      font-weight: 700;
+      letter-spacing: 0.42em;
+      padding-left: 0.42em;
+      color: var(--fg);
+      margin: 0;
+      line-height: 1;
+      text-shadow: 0 0 28px rgba(212, 175, 55, 0.18);
+    }
+
+    .hero__ornament {
+      display: flex; align-items: center; justify-content: center;
+      width: 62%; gap: 1.1rem;
+      margin: 0.2rem 0;
+    }
+    .hero__rule {
+      flex: 1; height: 1px;
+      background: linear-gradient(90deg, transparent 0%, rgba(212, 175, 55, 0.45) 50%, transparent 100%);
+    }
+    .hero__sigil { color: var(--gold); font-size: 0.65rem; opacity: 0.7; }
+
+    .hero__taglines { display: flex; flex-direction: column; gap: 0.5rem; }
+    .hero__tagline {
+      font-family: var(--font-body);
+      font-size: clamp(0.82rem, 1.4vw, 0.96rem);
+      letter-spacing: 0.16em;
+      line-height: 1.85;
+      color: rgba(255, 255, 255, 0.62);
+    }
+    .hero__tagline--quiet {
+      font-style: italic;
+      color: rgba(255, 255, 255, 0.36);
+      letter-spacing: 0.2em;
+    }
+
+    .hero__cta-wrap { padding: 0.5rem; margin-top: 0.4rem; }
+    .hero__cta {
+      position: relative;
+      padding: 1rem 3rem;
+      padding-left: calc(3rem + 0.5em);
+      background: transparent;
+      border: 1px solid rgba(212, 175, 55, 0.55);
+      color: var(--gold);
+      font-family: var(--font-serif);
+      font-size: 0.82rem;
+      font-weight: 500;
+      letter-spacing: 0.5em;
+      text-transform: uppercase;
+      overflow: hidden;
+      transition: color 0.4s var(--easing), letter-spacing 0.4s var(--easing),
+                  padding-left 0.4s var(--easing), border-color 0.4s, background 0.4s;
+    }
+    .hero__cta::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: linear-gradient(135deg, rgba(212, 175, 55, 0.18) 0%, rgba(184, 10, 31, 0.06) 100%);
+      opacity: 0;
+      transition: opacity 0.5s var(--easing);
+      z-index: -1;
+    }
+    .hero__cta:hover {
+      color: #fff;
+      letter-spacing: 0.6em;
+      padding-left: calc(3rem + 0.6em);
+      border-color: var(--gold);
+      background: rgba(212, 175, 55, 0.04);
+    }
+    .hero__cta:hover::before { opacity: 1; }
+
+    .hero__stats {
+      font-family: var(--font-serif);
+      font-size: 0.6rem;
+      letter-spacing: 0.45em;
+      color: rgba(212, 175, 55, 0.32);
+      padding-left: 0.45em;
+      margin-top: 0.4rem;
+    }
+
+    @media (max-width: 768px) {
+      .bg-text-container .giant-text.kanji {
+        font-size: clamp(6rem, 24vw, 9rem);
+        opacity: 0.08;
+        letter-spacing: 0.04em;
+      }
+      .hero { width: 92vw; gap: 1.2rem; }
+      .hero__overline { font-size: 0.55rem; letter-spacing: 0.4em; }
+      .hero__eyebrow  { font-size: 0.55rem; letter-spacing: 0.55em; margin-bottom: -0.3rem; }
+      .hero__title    { font-size: clamp(2rem, 11vw, 3.4rem); letter-spacing: 0.3em; padding-left: 0.3em; }
+      .hero__ornament { width: 70%; }
+      .hero__tagline  { font-size: 0.78rem; letter-spacing: 0.12em; }
+      .hero__cta {
+        padding: 0.85rem 2.2rem;
+        padding-left: calc(2.2rem + 0.5em);
+        font-size: 0.72rem;
+        letter-spacing: 0.45em;
+      }
+      .hero__cta:hover { padding-left: calc(2.2rem + 0.55em); letter-spacing: 0.55em; }
+      .hero__stats { font-size: 0.55rem; letter-spacing: 0.35em; }
+    }
   </style>
 </head>
 <body>
@@ -663,32 +817,30 @@
     </div>
   </div>
 
-  <!-- SCROLLING MARQUEE -->
-  <div class="marquee-container">
-    <div class="marquee-content">
-      你是哪位魔法少女 • 人格类型鉴定中 • 魔女原型觉醒测试 • 你是哪位魔法少女 • 人格类型鉴定中 • 魔女原型觉醒测试 •
-    </div>
-  </div>
-
-  <!-- BACKGROUND TYPOGRAPHY -->
+  <!-- BACKGROUND TYPOGRAPHY — a single subdued kanji ghost behind the hero -->
   <div class="bg-text-container">
-    <div class="giant-text">魔法少女<span class="particle-no">の</span></div>
     <div class="giant-text kanji">魔女审判</div>
   </div>
 
-  <!-- MAIN CONTENT -->
-  <div class="content-wrapper">
-    <div class="narrative">
-      <h2 data-scramble="测测你是哪位魔法少女？">测测你是哪位魔法少女？</h2>
-      <p data-scramble="十三种魔女原型，隐藏着你的灵魂画像。">十三种魔女原型，隐藏着你的灵魂画像。</p>
-      <p data-scramble="当绝望与希望交织，你会选择怎样的道路？">当绝望与希望交织，你会选择怎样的道路？</p>
-      <p data-scramble="完成人格测试，揭开属于你的魔法少女类型。">完成人格测试，揭开属于你的魔法少女类型。</p>
+  <!-- HERO — codex-ritual landing block -->
+  <section class="hero">
+    <div class="hero__overline" data-scramble="序章 · PROLOGUE · I">序章 · PROLOGUE · I</div>
+    <div class="hero__eyebrow">MAGICAL GIRL'S</div>
+    <h1 class="hero__title" data-scramble="魔女审判">魔女审判</h1>
+    <div class="hero__ornament" aria-hidden="true">
+      <span class="hero__rule"></span>
+      <span class="hero__sigil">✦</span>
+      <span class="hero__rule"></span>
     </div>
-
-    <div class="magnetic-btn-wrap">
-      <button class="cta-btn magnetic" data-scramble="开始测试" onclick="initiateDive()">开始测试</button>
+    <div class="hero__taglines">
+      <p class="hero__tagline" data-scramble="十三名预备魔女 · 一座孤岛监牢">十三名预备魔女 · 一座孤岛监牢</p>
+      <p class="hero__tagline hero__tagline--quiet" data-scramble="命运唯有审判可定">命运唯有审判可定</p>
     </div>
-  </div>
+    <div class="hero__cta-wrap magnetic-btn-wrap">
+      <button class="hero__cta magnetic" data-scramble="接受审判" onclick="initiateDive()">接受审判</button>
+    </div>
+    <div class="hero__stats" id="hero-stats">—  名 灵 魂 已 受 审</div>
+  </section>
 
   <script>
     /* =========================================================
@@ -701,13 +853,12 @@
         hudTop: 'INQUISITION OPEN · 审判庭 · 准备就绪',
         hudBottomLeft: 'CODEX · 魔女审判书 序章',
         hudBottomRight: 'FOLIO · NO. 0451',
-        marquee: '那是一个，很久很久以前的故事 • 曾经在那座岛上，有许多魔女和睦地生活在一起 • 魔女们天生拥有魔法的力量 • 并发展出了独属于她们的文明 • 她们偶尔与来到岛上的人类接触 • 却始终避免与外界打交道，过着平静的生活 • 但—— • 和平的日常，迎来了终结 • 人类的军队出现了 • 他们捕捉、杀害魔女们，还破坏了岛屿 • 活下来的是统治魔女之岛的大魔女中的一人 • 年纪最小，却最擅长魔法的——雪 • 只有小雪一人幸存 • 她决心为同胞复仇 • 为了让人们遭受和魔女们同样的命运 • 她剥裂自己的灵魂 • 将其转化为魔女因子并散播给人类 • 这是一种诅咒 • 能让人类变成自己创造出来的幻想怪物——【魔女】，并最终死去 • 她在复仇心的支配下 • 将一个捡来的人类少女 • 梅露露当作实验体，完成了术法 • 虽然因为人类的繁殖力太强 • 要让每个人都感染魔女因子需要很长时间 • 但她始终没有放弃 • 许多年后 • 当几乎所有人类都成功植入了魔女因子时 • 她遇见了两个少女 • 那就是艾玛和希罗 • 在与她们心灵相通的过程中 • 小雪心中的复仇之火逐渐变得黯淡 • 她的内心产生了迷茫 • 但是她无法停下 • 她不可以停下 • 所以，她把一切都托付给了艾玛 • 将人类的命运以及自己的复仇计划 • 如同将赌注交给命运 • 她把自己精心铺陈的计划 • 托付给了他人之手 • 最终 • 我终究还是没有做到 • 是太过漫长的岁月让感情渐渐麻木 • 还是我与人类交集得太深 • 我的复仇之心已经锈蚀了 • 岛上的魔女们会不会笑我呢 • 那些变成魔女、因此死去的人类们 • 会不会怨恨我呢 • 即便如此 • 此刻我只想 • 任由自己沉浸在这温柔的浅眠之中—— •',
+        overline: '序章 · PROLOGUE · I',
         kanji: '魔女审判',
-        title: '测测你是哪位魔法少女？',
-        p1: '十三种魔女原型，隐藏着你的灵魂画像。',
-        p2: '当绝望与希望交织，你会选择怎样的道路？',
-        p3: '完成人格测试，揭开属于你的魔法少女类型。',
-        btn: '开始测试',
+        tagline1: '十三名预备魔女 · 一座孤岛监牢',
+        tagline2: '命运唯有审判可定',
+        btn: '接受审判',
+        statsHum: '{count} 名 灵 魂 已 受 审',
         alert: '>> 正在生成你的人格分析报告 <<'
       },
       tw: {
@@ -716,13 +867,12 @@
         hudTop: 'INQUISITION OPEN · 審判庭 · 準備就緒',
         hudBottomLeft: 'CODEX · 魔女審判書 序章',
         hudBottomRight: 'FOLIO · NO. 0451',
-        marquee: '那是一个，很久很久以前的故事 • 曾经在那座岛上，有许多魔女和睦地生活在一起 • 魔女们天生拥有魔法的力量 • 并发展出了独属于她们的文明 • 她们偶尔与来到岛上的人类接触 • 却始终避免与外界打交道，过着平静的生活 • 但—— • 和平的日常，迎来了终结 • 人类的军队出现了 • 他们捕捉、杀害魔女们，还破坏了岛屿 • 活下来的是统治魔女之岛的大魔女中的一人 • 年纪最小，却最擅长魔法的——雪 • 只有小雪一人幸存 • 她决心为同胞复仇 • 为了让人们遭受和魔女们同样的命运 • 她剥裂自己的灵魂 • 将其转化为魔女因子并散播给人类 • 这是一种诅咒 • 能让人类变成自己创造出来的幻想怪物——【魔女】，并最终死去 • 她在复仇心的支配下 • 将一个捡来的人类少女 • 梅露露当作实验体，完成了术法 • 虽然因为人类的繁殖力太强 • 要让每个人都感染魔女因子需要很长时间 • 但她始终没有放弃 • 许多年后 • 当几乎所有人类都成功植入了魔女因子时 • 她遇见了两个少女 • 那就是艾玛和希罗 • 在与她们心灵相通的过程中 • 小雪心中的复仇之火逐渐变得黯淡 • 她的内心产生了迷茫 • 但是她无法停下 • 她不可以停下 • 所以，她把一切都托付给了艾玛 • 将人类的命运以及自己的复仇计划 • 如同将赌注交给命运 • 她把自己精心铺陈的计划 • 托付给了他人之手 • 最终 • 我终究还是没有做到 • 是太过漫长的岁月让感情渐渐麻木 • 还是我与人类交集得太深 • 我的复仇之心已经锈蚀了 • 岛上的魔女们会不会笑我呢 • 那些变成魔女、因此死去的人类们 • 会不会怨恨我呢 • 即便如此 • 此刻我只想 • 任由自己沉浸在这温柔的浅眠之中—— •',
+        overline: '序章 · PROLOGUE · I',
         kanji: '魔女審判',
-        title: '測測你是哪位魔法少女？',
-        p1: '十三種魔女原型，隱藏著你的靈魂畫像。',
-        p2: '當絕望與希望交織，你會選擇怎樣的道路？',
-        p3: '完成人格測試，揭開屬於你的魔法少女類型。',
-        btn: '開始測試',
+        tagline1: '十三名預備魔女 · 一座孤島監牢',
+        tagline2: '命運唯有審判可定',
+        btn: '接受審判',
+        statsHum: '{count} 名 靈 魂 已 受 審',
         alert: '>> 正在生成你的人格分析報告 <<'
       },
       en: {
@@ -731,13 +881,12 @@
         hudTop: 'INQUISITION OPEN · TRIBUNAL READY',
         hudBottomLeft: 'CODEX · WITCH TRIAL · FOLIO I',
         hudBottomRight: 'CASE FILE · NO. 0451',
-        marquee: 'That is a story from a long, long time ago • Once upon a time, many witches lived peacefully together on that island • Witches were born with magical powers • And developed a civilization uniquely their own • They occasionally interacted with humans who came to the island • But always avoided dealing with the outside world, living a quiet life • However— • The peaceful everyday life came to an end • Human armies appeared • They captured and killed the witches, and destroyed the island • The one who survived was one of the Great Witches who ruled the Island of Witches • The youngest, yet most adept at magic—Yuki • Only little Yuki survived • She resolved to avenge her compatriots • To make humans suffer the same fate as the witches • She tore apart her own soul • Transforming it into the Witch Factor and scattering it among humans • This is a curse • That turns humans into the fantasy monsters she created—[Witches], and eventually die • Driven by vengeance • She used a human girl she picked up • Meruru, as a test subject, and completed the spell • Although because human reproduction is too strong • It would take a long time to infect everyone with the Witch Factor • She never gave up • Many years later • When almost all humans had successfully been implanted with the Witch Factor • She met two girls • They were Emma and Hiro • In the process of connecting with their hearts • The fire of revenge in Yuki\'s heart gradually dimmed • Confusion arose in her heart • But she couldn\'t stop • She must not stop • So, she entrusted everything to Emma • Entrusting the fate of humanity and her revenge plan • Like handing over a bet to destiny • She entrusted her carefully laid plan • Into the hands of others • In the end • I still couldn\'t do it • Was it the too long passage of time that made my feelings gradually numb • Or did I get too deeply involved with humans • My heart of vengeance has rusted • Will the witches on the island laugh at me • Those humans who turned into witches and died because of it • Will they resent me • Even so • Right now I just want • To let myself sink into this gentle shallow sleep— •',
+        overline: 'PROLOGUE · CHAPTER I',
         kanji: 'WITCH TRIAL',
-        title: 'Which Magical Girl Are You?',
-        p1: 'Thirteen witch archetypes hide the portrait of your soul.',
-        p2: 'When despair and hope intertwine, which path will you choose?',
-        p3: 'Complete the personality test to uncover your magical girl type.',
-        btn: 'START TEST',
+        tagline1: 'Thirteen witches. One island prison.',
+        tagline2: 'Only the trial may name your soul.',
+        btn: 'Enter the Trial',
+        statsHum: '{count} SOULS HAVE BEEN JUDGED',
         alert: '>> GENERATING YOUR PERSONALITY REPORT <<'
       },
       jp: {
@@ -746,13 +895,12 @@
         hudTop: 'INQUISITION OPEN · 審判廷 起動',
         hudBottomLeft: 'CODEX · 魔女審判書 序章',
         hudBottomRight: 'FOLIO · NO. 0451',
-        marquee: 'それは、ずっとずっと昔の物語 • かつてその島には、多くの魔女たちが平和に暮らしていた • 魔女たちは生まれながらにして魔法の力を持ち • 彼女たち独自の文明を築き上げた • 島を訪れる人間と時折交流することはあったが • 常に外界との関わりを避け、静かな生活を送っていた • しかし—— • 平和な日常は終わりを告げた • 人間の軍隊が現れたのだ • 彼らは魔女たちを捕らえ、殺し、島を破壊した • 生き残ったのは、魔女の島を統べる大魔女の一人 • 最年少でありながら、最も魔法に長けていた——ユキ • 小さなユキだけが生き残った • 彼女は同胞の復讐を誓った • 人間たちに魔女と同じ運命を味わわせるために • 彼女は自らの魂を裂き • それを魔女因子に変えて人間たちにばら撒いた • これは呪い • 人間を彼女が創り出した幻想の怪物——【魔女】に変え、最終的に死に至らしめる呪い • 復讐心に支配された彼女は • 拾った人間の少女 • メルルを実験体とし、術式を完成させた • 人間の繁殖力があまりにも強いため • 全員に魔女因子を感染させるには長い時間がかかるが • 彼女は決して諦めなかった • 何年も後 • ほぼすべての人間が魔女因子の植え付けに成功した時 • 彼女は二人の少女に出会った • それがエマとヒロだった • 彼女たちと心を通わせる中で • ユキの心にある復讐の炎は次第に暗くなっていった • 彼女の心に迷いが生じた • しかし、彼女は止まることができなかった • 止まってはいけなかった • だから、彼女はすべてをエマに託した • 人類の運命と自らの復讐計画を • まるで運命に賭けを預けるかのように • 彼女は緻密に練り上げた計画を • 他者の手に委ねた • 結局 • 私はどうしてもできなかった • 長すぎる歳月が感情を麻痺させたのか • それとも人間と深く関わりすぎたのか • 私の復讐心は錆びついてしまった • 島の魔女たちは私を笑うだろうか • 魔女になり、そのために死んでいった人間たちは • 私を恨むだろうか • それでも • 今はただ • この優しい浅い眠りに身を委ねたい—— •',
+        overline: '序章 · PROLOGUE · I',
         kanji: '魔女裁判',
-        title: 'あなたはどの魔法少女タイプ？',
-        p1: '十三の魔女原型に、あなたの魂の姿が隠されている。',
-        p2: '絶望と希望が交錯する時、あなたはどの道を選ぶ？',
-        p3: '性格診断を完了させ、あなたの魔法少女タイプを暴け。',
-        btn: '診断を始める',
+        tagline1: '十三人の予備魔女 · 孤島の監牢',
+        tagline2: '運命を定めるのは審判のみ',
+        btn: '審判を受ける',
+        statsHum: '{count} の 魂 が 審 か れ た',
         alert: '>> 人格分析レポートを生成中 <<'
       }
     };
@@ -782,43 +930,54 @@
       const hudBottomRight = document.querySelector('.hud-bottom div:last-child');
       if (hudBottomRight) hudBottomRight.textContent = data.hudBottomRight;
 
-      // Update marquee
+      // Update marquee — removed; .marquee-content no longer in DOM (kept i18n no-op safe)
       const marquee = document.querySelector('.marquee-content');
-      if (marquee) {
+      if (marquee && data.marquee) {
         marquee.textContent = data.marquee + data.marquee;
       }
 
-      // Update kanji with scramble
+      // Update kanji ghost with scramble
       const kanji = document.querySelector('.giant-text.kanji');
       if (kanji) {
         const s = new TextScramble(kanji);
         s.setText(data.kanji);
       }
 
-      // Update narrative with scramble
-      const title = document.querySelector('.narrative h2');
-      if (title) {
-        title.setAttribute('data-scramble', data.title);
-        const s = new TextScramble(title);
-        s.setText(data.title);
+      // Hero overline
+      const overline = document.querySelector('.hero__overline');
+      if (overline && data.overline) {
+        overline.setAttribute('data-scramble', data.overline);
+        new TextScramble(overline).setText(data.overline);
       }
 
-      const ps = document.querySelectorAll('.narrative p');
-      const pKeys = ['p1', 'p2', 'p3'];
-      ps.forEach((p, i) => {
-        if (pKeys[i]) {
-          p.setAttribute('data-scramble', data[pKeys[i]]);
-          const s = new TextScramble(p);
-          s.setText(data[pKeys[i]]);
+      // Hero main title (mirrors kanji slot)
+      const heroTitle = document.querySelector('.hero__title');
+      if (heroTitle) {
+        heroTitle.setAttribute('data-scramble', data.kanji);
+        new TextScramble(heroTitle).setText(data.kanji);
+      }
+
+      // Hero taglines
+      const taglines = document.querySelectorAll('.hero__tagline');
+      [data.tagline1, data.tagline2].forEach((txt, i) => {
+        if (taglines[i] && txt) {
+          taglines[i].setAttribute('data-scramble', txt);
+          new TextScramble(taglines[i]).setText(txt);
         }
       });
 
-      // Update button
-      const btn = document.querySelector('.cta-btn');
-      if (btn) {
+      // Hero CTA
+      const btn = document.querySelector('.hero__cta, .cta-btn');
+      if (btn && data.btn) {
         btn.setAttribute('data-scramble', data.btn);
-        const s = new TextScramble(btn);
-        s.setText(data.btn);
+        new TextScramble(btn).setText(data.btn);
+      }
+
+      // Hero stats (formatted with current count)
+      const statsEl = document.getElementById('hero-stats');
+      if (statsEl && data.statsHum) {
+        const c = window.__participantCount;
+        statsEl.textContent = data.statsHum.replace('{count}', c != null ? c.toLocaleString() : '—');
       }
 
       localStorage.setItem('witch-trial-locale', lang === 'zh' ? 'zh-CN' : lang === 'tw' ? 'zh-TW' : lang === 'jp' ? 'ja' : lang);
@@ -1154,6 +1313,20 @@
     if (document.readyState === 'complete' || document.readyState === 'interactive') {
       setTimeout(startBootSequence, 100);
     }
+
+    // Fetch participant count and substitute into hero stats line.
+    window.__participantCount = null;
+    fetch('/api/count')
+      .then((r) => r.json())
+      .then((d) => {
+        window.__participantCount = d.total;
+        const statsEl = document.getElementById('hero-stats');
+        const tpl = i18n[currentLang] && i18n[currentLang].statsHum;
+        if (statsEl && tpl) {
+          statsEl.textContent = tpl.replace('{count}', d.total.toLocaleString());
+        }
+      })
+      .catch(() => {});
 
     /* =========================================================
        7. ACTION
