@@ -930,8 +930,8 @@
     let dashes = [];
     function seedDashes() {
       dashes = [];
-      // Lattice spacing. Larger cell = sparser & more refined.
-      const cell = 46;
+      // Lattice spacing — slightly denser than dashes since dots are smaller visually.
+      const cell = 38;
       const cols = Math.ceil(width  / cell) + 2;
       const rows = Math.ceil(height / cell) + 2;
       for (let j = -1; j < rows; j++) {
@@ -946,10 +946,9 @@
             n2b: y * 0.018  - x * 0.011,
             colorSeed: (x * 0.0017 + y * 0.0023),
             scale: 0,
-            // ★ FIXED random angle per dash (not radial). This is what
-            //   antigravity actually does — the radial alignment was my error.
-            baseAngle: Math.random() * Math.PI,
-            len: 3.5 + Math.random() * 3,         // smaller, more delicate
+            // Per-dot base radius — biased small with occasional large dots.
+            // Use pow(rand, 1.8) so most are small (close to 0.6), a few are larger (~3).
+            baseR: 0.6 + Math.pow(Math.random(), 1.8) * 2.6,   // 0.6 – 3.2 px
             cOff: Math.random() * Math.PI * 2,
           });
         }
@@ -957,23 +956,27 @@
     }
     resize();
 
-    // 3-color palette mix. Two-step lerp through warm ivory → gold → rose → crimson.
-    // The shader uses 3 colors mixed via single noise param; we add a 4th for depth.
+    // Antigravity-style multi-stop palette: warm reds → orange → gold → cool teal → blue → violet.
+    // Six stops mixed by a single noise scalar → smooth color transitions across the field.
+    const PALETTE = [
+      [232,  88, 108],   // crimson
+      [240, 148,  78],   // orange
+      [238, 202,  92],   // gold
+      [126, 196, 168],   // sea green
+      [104, 156, 222],   // azure
+      [176, 130, 222],   // violet
+    ];
     function mixColor(t) {
-      // t in [0, 1]
-      // Stops: 0 ivory, 0.35 gold, 0.7 rose, 1 crimson
-      let r, g, b;
-      if (t < 0.35) {
-        const u = t / 0.35;
-        r = 252 + (240 - 252) * u; g = 240 + (200 - 240) * u; b = 215 + ( 90 - 215) * u;
-      } else if (t < 0.7) {
-        const u = (t - 0.35) / 0.35;
-        r = 240 + (224 - 240) * u; g = 200 + (140 - 200) * u; b =  90 + (155 -  90) * u;
-      } else {
-        const u = (t - 0.7) / 0.3;
-        r = 224 + (175 - 224) * u; g = 140 + ( 75 - 140) * u; b = 155 + ( 90 - 155) * u;
-      }
-      return [r | 0, g | 0, b | 0];
+      const n = PALETTE.length - 1;
+      const idx = t * n;
+      const i = Math.min(n - 1, Math.max(0, Math.floor(idx)));
+      const f = idx - i;
+      const a = PALETTE[i], b = PALETTE[i + 1];
+      return [
+        (a[0] + (b[0] - a[0]) * f) | 0,
+        (a[1] + (b[1] - a[1]) * f) | 0,
+        (a[2] + (b[2] - a[2]) * f) | 0,
+      ];
     }
 
     function animateCanvas(time) {
@@ -1022,26 +1025,17 @@
         px += (mx - px) * pull;
         py += (my - py) * pull;
 
-        // Orientation: FIXED random angle per dash + small noise wobble.
-        // No radial alignment — that read as a porcupine, not as refined drift.
-        const wobble = Math.sin(d.n2a + tSlow * 0.7) * 0.35;
-        const angle = d.baseAngle + wobble;
-
-        // Color: noise → palette mix. Each dash has its own offset for variation.
-        const cNoise = 0.5 + 0.5 * Math.sin(d.colorSeed + tColor + d.cOff);
+        // Color: noise → palette mix. Each dot has its own phase so neighbours don't sync.
+        const cNoise = 0.5 + 0.5 * Math.sin(d.colorSeed * 4.7 + tColor + d.cOff);
         const [r, g, b] = mixColor(cNoise);
 
-        const alpha = Math.min(d.scale * 1.05, 0.9);
-        const len = d.len * (0.65 + d.scale * 0.7);
-        const half = len * 0.5;
-        const cosA = Math.cos(angle), sinA = Math.sin(angle);
+        const alpha = Math.min(d.scale * 1.1, 0.92);
+        const radius = d.baseR * (0.55 + d.scale * 0.85);
 
         ctx.beginPath();
-        ctx.strokeStyle = `rgba(${r},${g},${b},${alpha})`;
-        ctx.lineWidth = 0.9 + d.scale * 0.6;
-        ctx.moveTo(px - cosA * half, py - sinA * half);
-        ctx.lineTo(px + cosA * half, py + sinA * half);
-        ctx.stroke();
+        ctx.fillStyle = `rgba(${r},${g},${b},${alpha})`;
+        ctx.arc(px, py, radius, 0, Math.PI * 2);
+        ctx.fill();
       }
       requestAnimationFrame(animateCanvas);
     }
