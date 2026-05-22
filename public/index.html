@@ -887,12 +887,14 @@
     }
 
     /* =========================================================
-       2. CANVAS FLUID PARTICLE SWARM 
+       2. ATMOSPHERIC PETAL DRIFT
+       Physics-based falling petals: depth/parallax, wind oscillation,
+       tumble (Y-axis 3D rotation simulated by scaleX), gravity, drag.
+       Replaces the prior mouse-tracking particle swarm.
        ========================================================= */
     const canvas = document.getElementById('abyss-canvas');
     const ctx = canvas.getContext('2d');
     let width, height;
-    let particles = [];
     const mouse = { x: -1000, y: -1000 };
 
     function resize() {
@@ -902,95 +904,154 @@
     window.addEventListener('resize', resize);
     resize();
 
-    // 适配电脑鼠标
-    window.addEventListener('mousemove', (e) => {
-      mouse.x = e.clientX;
-      mouse.y = e.clientY;
-    });
+    // Mouse tracking kept for the custom cursor below — petals themselves are ambient (no mouse interaction)
+    window.addEventListener('mousemove', (e) => { mouse.x = e.clientX; mouse.y = e.clientY; });
+    window.addEventListener('touchmove', (e) => { mouse.x = e.touches[0].clientX; mouse.y = e.touches[0].clientY; }, { passive: true });
 
-    // 适配手机滑动
-    window.addEventListener('touchmove', (e) => {
-      mouse.x = e.touches[0].clientX;
-      mouse.y = e.touches[0].clientY;
-    }, { passive: true });
+    // Refined palette: dried rose · dusty crimson · antique gold (rare ember) · ivory (very rare ascension)
+    const PETAL_PALETTE = [
+      { r: 188, g: 130, b: 140, weight: 0.55 }, // dusty rose
+      { r: 152, g:  70, b:  82, weight: 0.32 }, // dried crimson
+      { r: 212, g: 175, b:  55, weight: 0.10 }, // antique gold
+      { r: 240, g: 226, b: 200, weight: 0.03 }, // ivory
+    ];
+    function pickColor() {
+      let r = Math.random();
+      for (const c of PETAL_PALETTE) { if ((r -= c.weight) <= 0) return c; }
+      return PETAL_PALETTE[0];
+    }
 
-    class Particle {
-      constructor() {
+    class Petal {
+      constructor(seeded = false) {
+        // Depth 0 = far (small, slow, dim), 1 = near (large, faster, vivid).
+        this.depth = 0.25 + Math.pow(Math.random(), 1.4) * 0.75;
+        this.size  = 7 + this.depth * 16; // 7-23 px
+
         this.x = Math.random() * width;
-        this.y = Math.random() * height;
-        this.vx = (Math.random() - 0.5) * 2;
-        this.vy = (Math.random() - 0.5) * 2;
-        this.life = Math.random() * 0.5 + 0.1;
-        this.color = Math.random() > 0.85 ? '#d4af37' : '#333333';
-        this.size = Math.random() * 2;
-        this.history = [];
+        // On first paint, distribute petals through viewport so the scene starts populated;
+        // otherwise spawn just above viewport and let them fall in.
+        this.y = seeded ? Math.random() * height : -this.size * 2.2;
+
+        this.vx = (Math.random() - 0.5) * 0.25;
+        this.vy = 0.15 + Math.random() * 0.25;
+
+        // Tumble simulates spinning around vertical axis (squashing horizontal scale).
+        this.tumblePhase = Math.random() * Math.PI * 2;
+        this.tumbleSpeed = (0.004 + Math.random() * 0.009) * (Math.random() < 0.5 ? 1 : -1);
+
+        // In-plane rotation: very slow drift.
+        this.rotation = Math.random() * Math.PI * 2;
+        this.rotationSpeed = (Math.random() - 0.5) * 0.006;
+
+        // Each petal has its own wind-response offset so they don't move in unison.
+        this.windPhase = Math.random() * Math.PI * 2;
+
+        const c = pickColor();
+        this.r = c.r; this.g = c.g; this.b = c.b;
+        // Only gold petals can become an "ember" — soft inner glow, slightly larger.
+        this.isEmber = (c === PETAL_PALETTE[2]) && (Math.random() < 0.5);
+        if (this.isEmber) this.size *= 1.15;
+
+        // Fade-in for newly-spawned petals so they don't pop in.
+        this.life = seeded ? 1 : 0;
+
+        // 0/1/2 → three petal silhouettes (round teardrop, pointed, asymmetric).
+        this.shape = Math.floor(Math.random() * 3);
       }
 
-      update() {
-        this.history.push({ x: this.x, y: this.y });
-        if (this.history.length > 20) this.history.shift();
+      update(time) {
+        if (this.life < 1) this.life = Math.min(1, this.life + 0.004);
 
-        let dx = mouse.x - this.x;
-        let dy = mouse.y - this.y;
-        let dist = Math.sqrt(dx * dx + dy * dy);
+        // Wind: two layered sines (slow drift + faster shimmer). Far petals respond less.
+        const slow = Math.sin(time * 0.00028 + this.windPhase) * 0.45;
+        const fast = Math.sin(time * 0.0014  + this.windPhase * 2.3) * 0.18;
+        const wind = (slow + fast) * this.depth;
 
-        // 增加排斥半径并强化排斥力，让粒子逃逸更明显
-        if (dist < 350) {
-          let force = (350 - dist) / 350;
-          let angle = Math.atan2(dy, dx);
-          // 强化垂直切线方向的旋转力
-          this.vx += Math.cos(angle + Math.PI/2) * force * 0.8;
-          this.vy += Math.sin(angle + Math.PI/2) * force * 0.8;
-          // 强化直接的排斥力
-          this.vx -= (dx / dist) * force * 0.5;
-          this.vy -= (dy / dist) * force * 0.5;
-        }
-
-        // 降低摩擦力，让粒子流动更顺滑
-        this.vx *= 0.99;
-        this.vy *= 0.99;
-        this.vx += Math.sin(this.y * 0.01) * 0.15;
-        this.vy += Math.cos(this.x * 0.01) * 0.15;
+        // Smooth lerp toward the wind speed — gives "follow but lag" feel.
+        this.vx += (wind - this.vx) * 0.018;
+        this.vy += 0.0075 * this.depth;       // gravity, parallax-attenuated
+        this.vy *= 0.994;                      // air drag → terminal velocity
+        this.vx *= 0.996;
 
         this.x += this.vx;
         this.y += this.vy;
+        this.rotation   += this.rotationSpeed;
+        this.tumblePhase += this.tumbleSpeed;
 
-        if (this.x > width + 50) this.x = -50;
-        if (this.x < -50) this.x = width + 50;
-        if (this.y > height + 50) this.y = -50;
-        if (this.y < -50) this.y = height + 50;
+        // Recycle from the top once off-screen.
+        if (this.y > height + 40) {
+          this.y = -this.size * 2.2;
+          this.x = Math.random() * width;
+          this.vx = (Math.random() - 0.5) * 0.25;
+          this.vy = 0.15 + Math.random() * 0.25;
+          this.life = 0;
+        }
+        // Wrap horizontally — wind drift can carry them far.
+        if (this.x < -60) this.x = width + 60;
+        if (this.x > width + 60) this.x = -60;
       }
 
       draw() {
-        if (this.history.length < 2) return;
-        ctx.beginPath();
-        ctx.moveTo(this.history[0].x, this.history[0].y);
-        for (let i = 1; i < this.history.length; i++) {
-          ctx.lineTo(this.history[i].x, this.history[i].y);
+        // Edge-on visibility: when tumble has the petal at its thin edge, it nearly vanishes.
+        const tumbleScale = Math.abs(Math.cos(this.tumblePhase));
+        const edgeAlpha   = 0.32 + tumbleScale * 0.68;
+        const baseAlpha   = (0.22 + this.depth * 0.55) * this.life * edgeAlpha;
+
+        ctx.save();
+        ctx.translate(this.x, this.y);
+        ctx.rotate(this.rotation);
+        ctx.scale(tumbleScale, 1);
+
+        if (this.isEmber) {
+          ctx.shadowColor = `rgba(212, 175, 55, ${baseAlpha * 0.9})`;
+          ctx.shadowBlur  = this.size * 1.6;
         }
-        ctx.strokeStyle = this.color;
-        ctx.lineWidth = this.size;
-        ctx.lineCap = 'round';
-        ctx.globalAlpha = this.life;
-        ctx.stroke();
+
+        // Soft radial fill for painterly edges (vs hard SVG-like silhouette).
+        const grad = ctx.createRadialGradient(0, -this.size * 0.15, 0, 0, 0, this.size);
+        grad.addColorStop(0,   `rgba(${this.r}, ${this.g}, ${this.b}, ${baseAlpha})`);
+        grad.addColorStop(0.55,`rgba(${this.r}, ${this.g}, ${this.b}, ${baseAlpha * 0.78})`);
+        grad.addColorStop(1,   `rgba(${this.r}, ${this.g}, ${this.b}, 0)`);
+        ctx.fillStyle = grad;
+
+        const s = this.size;
+        ctx.beginPath();
+        if (this.shape === 0) {
+          // Round teardrop
+          ctx.moveTo(0, -s);
+          ctx.bezierCurveTo( s * 0.65, -s * 0.55,  s * 0.55,  s * 0.75, 0, s);
+          ctx.bezierCurveTo(-s * 0.55,  s * 0.75, -s * 0.65, -s * 0.55, 0, -s);
+        } else if (this.shape === 1) {
+          // Pointed petal — narrower, more lance-like
+          ctx.moveTo(0, -s);
+          ctx.bezierCurveTo( s * 0.45, -s * 0.4,   s * 0.4,   s * 0.6, 0, s);
+          ctx.bezierCurveTo(-s * 0.4,   s * 0.6,  -s * 0.45, -s * 0.4, 0, -s);
+        } else {
+          // Asymmetric — one shoulder heavier
+          ctx.moveTo(0, -s * 0.95);
+          ctx.bezierCurveTo( s * 0.75, -s * 0.55,  s * 0.5,  s * 0.85, 0, s * 0.95);
+          ctx.bezierCurveTo(-s * 0.4,   s * 0.7,  -s * 0.6, -s * 0.45, 0, -s * 0.95);
+        }
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.restore();
       }
     }
 
-    for (let i = 0; i < 150; i++) particles.push(new Particle());
+    // Target density: enough to feel populated but never crowded.
+    const PETAL_COUNT = Math.max(14, Math.min(26, Math.round(width * height / 80000)));
+    const petals = [];
+    for (let i = 0; i < PETAL_COUNT; i++) petals.push(new Petal(true));
 
-    function animateCanvas() {
-      ctx.fillStyle = 'rgba(3, 3, 3, 0.25)';
-      ctx.fillRect(0, 0, width, height);
-
-      ctx.globalCompositeOperation = 'lighter';
-      for (let p of particles) {
-        p.update();
-        p.draw();
-      }
-      ctx.globalCompositeOperation = 'source-over';
+    let lastTime = 0;
+    function animateCanvas(time) {
+      // Clear cleanly each frame — no trail fade, no additive blending. Petals are shapes, not streaks.
+      ctx.clearRect(0, 0, width, height);
+      for (const p of petals) { p.update(time); p.draw(); }
       requestAnimationFrame(animateCanvas);
     }
-    animateCanvas();
+    requestAnimationFrame(animateCanvas);
 
     /* =========================================================
        3. CUSTOM CURSOR LOGIC
