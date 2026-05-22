@@ -66,6 +66,10 @@ const META = {
 };
 
 let currentFx = 'halo';
+
+// Forward-declared state objects so setFx() can reset them.
+const ripple = { pulses: [], lastSpawn: 0, lastX: 0, lastY: 0 };
+
 function setFx(name) {
   currentFx = name;
   document.querySelectorAll('.picker button').forEach(b => b.classList.toggle('active', b.dataset.fx === name));
@@ -131,7 +135,6 @@ function drawHalo(time) {
    Pulses spawn periodically from cursor; each expands and fades.
    Movement triggers extra pulses → ritual-ping responsiveness.
    ────────────────────────────────────────────────────────────── */
-const ripple = { pulses: [], lastSpawn: 0, lastX: 0, lastY: 0 };
 function drawRipple(time) {
   ctx.clearRect(0, 0, w, h);
 
