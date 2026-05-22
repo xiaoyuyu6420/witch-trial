@@ -2,18 +2,20 @@ import { DIMENSIONS, WEIGHTS, ALGO_CONFIG, type DimCode } from "@/data/quiz-cont
 
 // --- 向量解析与计算 ---
 
+const TIER_CHAR_TO_NUM: Record<string, number> = { L: 0, M: 1, H: 2, X: 3 };
+const TIER_NUM_TO_CHAR = ["L", "M", "H", "X"] as const;
+const DIM_CODES = DIMENSIONS.map((d) => d.code) as DimCode[];
+const DIM_WEIGHTS = DIM_CODES.map((c) => WEIGHTS[c] ?? 1.0);
+const MAX_DISTANCE = DIM_WEIGHTS.reduce((s, w) => s + w * 3, 0);
+
 /** 将 "LHH-LLM-HHH-LLL" 解析为 [0,2,2, 0,1,0, 2,2,2, 0,0,0] */
 export function parseVector(v: string): number[] {
-  return v.replace(/-/g, "").split("").map((c) => {
-    const map: Record<string, number> = { L: 0, M: 1, H: 2, X: 3 };
-    return map[c] ?? 1;
-  });
+  return v.replace(/-/g, "").split("").map((c) => TIER_CHAR_TO_NUM[c] ?? 1);
 }
 
 /** 将 12 个数值转为 "LHH-LLM-HHH-LLL" 格式 */
 export function formatVector(values: number[]): string {
-  const labels = ["L", "M", "H", "X"];
-  const chars = values.map((v) => labels[Math.min(v, 3)]);
+  const chars = values.map((v) => TIER_NUM_TO_CHAR[Math.min(v, 3)]);
   return [chars.slice(0, 3).join(""), chars.slice(3, 6).join(""), chars.slice(6, 9).join(""), chars.slice(9, 12).join("")].join("-");
 }
 
@@ -27,25 +29,21 @@ export function scoreToTier(total: number): number {
 
 /** 加权曼哈顿距离 */
 export function weightedManhattan(a: number[], b: number[]): number {
-  const dimCodes = DIMENSIONS.map((d) => d.code);
   let dist = 0;
   for (let i = 0; i < 12; i++) {
-    const w = WEIGHTS[dimCodes[i] as DimCode] ?? 1.0;
-    dist += w * Math.abs(a[i] - b[i]);
+    dist += DIM_WEIGHTS[i] * Math.abs(a[i] - b[i]);
   }
   return dist;
 }
 
 /** 最大可能距离 */
 export function maxDistance(): number {
-  const dimCodes = DIMENSIONS.map((d) => d.code);
-  return dimCodes.reduce((sum, code) => sum + (WEIGHTS[code as DimCode] ?? 1.0) * 3, 0);
+  return MAX_DISTANCE;
 }
 
 /** 相似度 % */
 export function similarity(dist: number): number {
-  const max = maxDistance();
-  return Math.round(((1 - dist / max) * 100) * 10) / 10;
+  return Math.round(((1 - dist / MAX_DISTANCE) * 100) * 10) / 10;
 }
 
 // --- 匹配主函数 ---
@@ -112,14 +110,13 @@ export function match(
       // Compute user vector for special trigger too
       let specialUserVec = "";
       {
-        const dimCodes = DIMENSIONS.map((d) => d.code);
         const scores = { ...input.dimScores };
         if (input.gateValue === "normal") {
           scores["S2"] = Math.min((scores["S2"] ?? 0) + 1, 6);
         } else if (input.gateValue === "normal_alt") {
           scores["W1"] = Math.min((scores["W1"] ?? 0) + 1, 6);
         }
-        specialUserVec = formatVector(dimCodes.map((code) => scoreToTier(scores[code] ?? 3)));
+        specialUserVec = formatVector(DIM_CODES.map((code) => scoreToTier(scores[code] ?? 3)));
       }
 
       return {
@@ -142,7 +139,6 @@ export function match(
   }
 
   // ② 计算用户向量
-  const dimCodes = DIMENSIONS.map((d) => d.code);
   let userValues: number[];
 
   {
@@ -158,7 +154,7 @@ export function match(
       scores[key] = Math.min((scores[key] ?? 0) + 1, 6);
     }
 
-    userValues = dimCodes.map((code) => {
+    userValues = DIM_CODES.map((code) => {
       const total = scores[code] ?? 3; // default mid
       return scoreToTier(total);
     });
@@ -182,7 +178,7 @@ export function match(
   const delta = ALGO_CONFIG.delta;
   const threshold = ALGO_CONFIG.threshold;
   let borderType = false;
-  let resultCode = best.type.code;
+  const resultCode = best.type.code;
 
   if (top3.length >= 2) {
     const gap = best.sim - top3[1].sim;

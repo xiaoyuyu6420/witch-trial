@@ -10,6 +10,9 @@ const t = {
     startHint: "Hover closer to begin",
     participants: "{count} souls have been judged",
     startButton: "Raise the Curtain",
+    prologue1: "At the end of factor erosion, the trial awaits you",
+    prologue2: "Thirteen witch candidates, one island prison",
+    prologue3: "Who will you be judged as?",
   },
   loading: {
     text: "Judging",
@@ -35,6 +38,7 @@ const t = {
     statsShort: "{percentage}% of the judged worldwide share your fate",
     factorResonance: "Factor Resonance {percentage}% — souls that share your fate",
     factorResonanceLabel: "Factor Resonance — souls that share your fate",
+    shareText: "I was judged as \"{name}\" in Witch Trial — {slogan} {url}",
   },
   dims: {
     S1: "Severity", S2: "Intuition", S3: "Forgiveness",

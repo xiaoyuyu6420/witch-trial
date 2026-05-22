@@ -10,6 +10,9 @@ const t = {
     startHint: "将鼠标移近此处",
     participants: "已有 {count} 人接受审判",
     startButton: "揭开序幕",
+    prologue1: "在因子侵蚀的尽头，审判等待着你",
+    prologue2: "十三名预备魔女，一座孤岛监牢",
+    prologue3: "你，将被审判为谁？",
   },
   loading: {
     text: "审判中",
@@ -35,6 +38,7 @@ const t = {
     statsShort: "全球 {percentage}% 的被审判者与你相同",
     factorResonance: "因子共鸣度 {percentage}% — 与你命运相同的审判者",
     factorResonanceLabel: "因子共鸣度 — 与你命运相同的审判者",
+    shareText: "我在魔女审判中被判定为「{name}」——{slogan} {url}",
   },
   dims: {
     S1: "严厉度", S2: "直觉度", S3: "宽恕度",

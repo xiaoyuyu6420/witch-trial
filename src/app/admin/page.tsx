@@ -222,6 +222,62 @@ function UsersTab({ api }: { api: (path: string, opts?: RequestInit) => Promise<
   );
 }
 
+// ========== Excel Toolbar ==========
+function ExcelToolbar({ api, onImported }: { api: (path: string, opts?: RequestInit) => Promise<Response>; onImported: () => void }) {
+  const [importing, setImporting] = useState(false);
+  const [msg, setMsg] = useState<{ text: string; ok: boolean } | null>(null);
+
+  const downloadTemplate = async () => {
+    try {
+      const res = await api("/template");
+      if (!res.ok) throw new Error("下载失败");
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a"); a.href = url; a.download = "witch-trial-template.xlsx"; a.click();
+      URL.revokeObjectURL(url);
+    } catch { setMsg({ text: "下载失败", ok: false }); }
+  };
+
+  const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setImporting(true);
+    setMsg(null);
+    try {
+      const pw = sessionStorage.getItem("admin-pw") || "";
+      const fd = new FormData();
+      fd.append("file", file);
+      const res = await fetch("/api/admin/import", {
+        method: "POST",
+        headers: { "x-admin-password": pw },
+        body: fd,
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "导入失败");
+      setMsg({ text: `导入成功：${data.updatedQuestions} 道题目，${data.updatedTypes} 个人格`, ok: true });
+      onImported();
+    } catch (err) {
+      setMsg({ text: err instanceof Error ? err.message : "导入失败", ok: false });
+    } finally {
+      setImporting(false);
+      e.target.value = "";
+    }
+  };
+
+  return (
+    <div style={{ display: "flex", gap: "0.5rem", marginBottom: "1rem", alignItems: "center", flexWrap: "wrap" }}>
+      <button onClick={downloadTemplate} style={{ background: "rgba(212,175,55,0.1)", border: "1px solid rgba(212,175,55,0.3)", color: "#d4af37", borderRadius: 6, padding: "0.5rem 1rem", cursor: "pointer", fontSize: "0.8rem" }}>
+        下载模板
+      </button>
+      <label style={{ background: importing ? "rgba(255,255,255,0.05)" : "rgba(212,175,55,0.15)", border: `1px solid ${importing ? "rgba(255,255,255,0.1)" : "rgba(212,175,55,0.4)"}`, color: importing ? "rgba(255,255,255,0.3)" : "#d4af37", borderRadius: 6, padding: "0.5rem 1rem", cursor: importing ? "wait" : "pointer", fontSize: "0.8rem", display: "inline-block" }}>
+        {importing ? "导入中..." : "导入 Excel"}
+        <input type="file" accept=".xlsx,.xls" onChange={handleImport} disabled={importing} style={{ display: "none" }} />
+      </label>
+      {msg && <span style={{ fontSize: "0.75rem", color: msg.ok ? "#4ade80" : "#ef4444" }}>{msg.text}</span>}
+    </div>
+  );
+}
+
 // ========== Questions Tab ==========
 const LANG_TABS = [
   { code: "zh-CN", label: "中文" },
@@ -361,6 +417,7 @@ function QuestionsTab({ api }: { api: (path: string, opts?: RequestInit) => Prom
 
   return (
     <div>
+      <ExcelToolbar api={api} onImported={fetchQ} />
       {questions.map((q) => (
         <div key={q.id as number} style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 8, marginBottom: "0.75rem", padding: "1rem" }}>
           {editing === (q.id as number) && editData ? (
@@ -481,7 +538,9 @@ function TypesTab({ api }: { api: (path: string, opts?: RequestInit) => Promise<
   if (loading) return <div style={{ color: "rgba(255,255,255,0.3)" }}>加载中...</div>;
 
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: "0.75rem" }}>
+    <div>
+      <ExcelToolbar api={api} onImported={fetchT} />
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: "0.75rem" }}>
       {types.map((t) => (
         <div key={t.id as number} style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 8, padding: "1rem" }}>
           {editing === (t.id as number) && editData ? (
@@ -518,6 +577,7 @@ function TypesTab({ api }: { api: (path: string, opts?: RequestInit) => Promise<
           )}
         </div>
       ))}
+      </div>
     </div>
   );
 }

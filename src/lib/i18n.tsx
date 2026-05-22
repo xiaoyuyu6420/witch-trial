@@ -25,6 +25,7 @@ interface I18nContextValue {
   setLocale: (l: Locale) => void;
   t: (key: string, vars?: Record<string, string | number>) => string;
   translations: Record<string, unknown>;
+  mounted: boolean;
 }
 
 const I18nContext = createContext<I18nContextValue | null>(null);
@@ -38,14 +39,22 @@ const loaders: Record<Locale, () => Promise<any>> = {
 };
 
 export function I18nProvider({ children }: { children: ReactNode }) {
-  const [locale, setLocaleState] = useState<Locale>("zh-CN");
+  const [locale, setLocaleState] = useState<Locale>(() => {
+    if (typeof window === "undefined") return "zh-CN";
+    return detectLocale();
+  });
   const [translations, setTranslations] = useState<Record<string, unknown>>({});
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    const detected = detectLocale();
-    setLocaleState(detected);
-    loaders[detected]().then(setTranslations);
-  }, []);
+    loaders[locale]().then((t) => {
+      setTranslations(t);
+      setMounted(true);
+    });
+    if (typeof document !== "undefined") {
+      document.documentElement.lang = locale;
+    }
+  }, [locale]);
 
   const setLocale = useCallback((l: Locale) => {
     setLocaleState(l);
@@ -54,6 +63,7 @@ export function I18nProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const t = useCallback((key: string, vars?: Record<string, string | number>): string => {
+    if (!mounted) return key;
     const keys = key.split(".");
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let val: any = translations;
@@ -66,10 +76,10 @@ export function I18nProvider({ children }: { children: ReactNode }) {
       return val.replace(/\{(\w+)\}/g, (_, name) => String(vars[name] ?? `{${name}}`));
     }
     return val;
-  }, [translations]);
+  }, [translations, mounted]);
 
   return (
-    <I18nContext.Provider value={{ locale, setLocale, t, translations }}>
+    <I18nContext.Provider value={{ locale, setLocale, t, translations, mounted }}>
       {children}
     </I18nContext.Provider>
   );

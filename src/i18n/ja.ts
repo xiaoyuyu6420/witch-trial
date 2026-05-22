@@ -10,6 +10,9 @@ const t = {
     startHint: "マウスを近づけてください",
     participants: "{count}人の魂が審判を受けました",
     startButton: "序章を開く",
+    prologue1: "因子の侵蝕が果てる場所、審判があなたを待っている",
+    prologue2: "十三人の予備魔女、孤島の監牢",
+    prologue3: "あなたは、誰として審判されるのか？",
   },
   loading: {
     text: "審判中",
@@ -35,6 +38,7 @@ const t = {
     statsShort: "世界中の{percentage}%があなたと同じ",
     factorResonance: "因子共鳴度 {percentage}% — あなたと同じ運命の審判者",
     factorResonanceLabel: "因子共鳴度 — あなたと同じ運命の審判者",
+    shareText: "魔女審判で「{name}」と判定されました——{slogan} {url}",
   },
   dims: {
     S1: "厳格さ", S2: "直感力", S3: "許容力",

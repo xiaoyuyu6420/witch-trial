@@ -1,0 +1,1182 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>魔女审判 | WITCH TRIAL — 魔法少女人格测试</title>
+  <meta name="description" content="在因子侵蚀的尽头，审判等待着你。十三名预备魔女，一座孤岛监牢。测测你会被审判为谁？">
+  <meta name="keywords" content="魔女审判, 人格测试, 魔法少女, 性格测试, Witch Trial, personality test">
+  <meta name="robots" content="index, follow">
+  <meta name="theme-color" content="#030303">
+  <meta name="format-detection" content="telephone=no, email=no, address=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="魔女审判">
+  <meta property="og:title" content="魔女审判 | WITCH TRIAL">
+  <meta property="og:description" content="十三名预备魔女，一座孤岛监牢。测测你会被审判为谁？">
+  <meta property="og:type" content="website">
+  <meta property="og:locale" content="zh_CN">
+  <meta property="og:locale:alternate" content="zh_TW">
+  <meta property="og:locale:alternate" content="en_US">
+  <meta property="og:locale:alternate" content="ja_JP">
+  <meta property="og:site_name" content="Witch Trial">
+  <!-- TODO: add an og:image asset at /og-image.png (1200x630) and uncomment the next line for rich share previews -->
+  <!-- <meta property="og:image" content="/og-image.png"> -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="魔女审判 | WITCH TRIAL">
+  <meta name="twitter:description" content="十三名预备魔女，一座孤岛监牢。测测你会被审判为谁？">
+  <link rel="canonical" href="/">
+  <!-- Tell parsers JS is required for the custom cursor; toggled by inline script below so JS-off desktops keep a system cursor -->
+  <script>document.documentElement.classList.add('js-ready');</script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700;900&family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Noto+Serif+SC:wght@300;600;900&display=swap" rel="stylesheet">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "name": "魔女审判 WITCH TRIAL",
+    "alternateName": ["Witch Trial", "魔女裁判", "魔女審判"],
+    "description": "魔法少女题材的人格测试。26 道情境题，匹配 16 种人格原型。",
+    "applicationCategory": "EntertainmentApplication",
+    "operatingSystem": "Any",
+    "inLanguage": ["zh-CN", "zh-TW", "en", "ja"],
+    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "CNY" }
+  }
+  </script>
+  <style>
+    /* =========================================
+       0. ROOT & RESET
+       ========================================= */
+    :root {
+      --bg: #030303;
+      --fg: #EFEFEF;
+      --blood: #b80a1f;
+      --ash: #888888;
+      --font-serif: 'Cinzel', 'Noto Serif SC', serif;
+      --font-mono: 'Space Mono', monospace;
+      --easing: cubic-bezier(0.76, 0, 0.24, 1);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    /* Custom cursor only when JS executes; falls back to system cursor otherwise. Touch devices override below. */
+    html.js-ready * { cursor: none !important; }
+
+    body {
+      background-color: var(--bg);
+      color: var(--fg);
+      font-family: var(--font-mono);
+      overflow: hidden;
+      width: 100vw;
+      height: 100vh;
+      height: 100dvh; /* 适配移动端动态视口 */
+      -webkit-font-smoothing: antialiased;
+    }
+
+    ::selection { background: var(--blood); color: #000; }
+
+    /* =========================================
+       1. CANVAS & FILTERS (The Abyss)
+       ========================================= */
+    #abyss-canvas {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      z-index: 1;
+      opacity: 0.6;
+    }
+
+    .noise {
+      position: absolute;
+      inset: 0;
+      z-index: 10;
+      pointer-events: none;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.95' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.08'/%3E%3C/svg%3E");
+    }
+
+    .vignette {
+      position: absolute;
+      inset: 0;
+      z-index: 2;
+      background: radial-gradient(circle at center, transparent 20%, var(--bg) 100%);
+      pointer-events: none;
+    }
+
+    /* =========================================
+       2. HUD & FRAME (Terminal UI Elements)
+       ========================================= */
+    .hud-frame {
+      position: absolute;
+      inset: 2rem;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      z-index: 5;
+      pointer-events: none;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .hud-corners::before, .hud-corners::after,
+    .hud-frame::before, .hud-frame::after {
+      content: ''; position: absolute;
+      width: 15px; height: 15px;
+      border: 2px solid var(--blood);
+      filter: drop-shadow(0 0 6px rgba(184, 10, 31, 0.6));
+      transition: all 0.5s ease;
+    }
+    
+    .hud-frame::before { top: -2px; left: -2px; border-right: none; border-bottom: none; }
+    .hud-frame::after { top: -2px; right: -2px; border-left: none; border-bottom: none; }
+    .hud-corners { position: absolute; inset: 0; }
+    .hud-corners::before { bottom: -2px; left: -2px; border-right: none; border-top: none; }
+    .hud-corners::after { bottom: -2px; right: -2px; border-left: none; border-top: none; }
+
+    .hud-top, .hud-bottom {
+      display: flex; justify-content: space-between;
+      padding: 1rem;
+      font-size: 0.65rem;
+      letter-spacing: 0.2em;
+      color: var(--ash);
+      text-transform: uppercase;
+    }
+
+    .status-blink {
+      display: inline-block;
+      width: 6px; height: 6px;
+      background: var(--blood);
+      border-radius: 50%;
+      margin-right: 8px;
+      animation: blink 2.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; box-shadow: 0 0 12px 2px var(--blood); }
+      50% { opacity: 0.2; box-shadow: 0 0 2px var(--blood); }
+    }
+
+    /* =========================================
+       3. GIANT TYPOGRAPHY (Avant-garde Design)
+       ========================================= */
+    .bg-text-container {
+      position: absolute;
+      top: 50%; left: 5%;
+      transform: translateY(-50%);
+      z-index: 3;
+      pointer-events: none;
+      mix-blend-mode: exclusion;
+    }
+
+    .giant-text {
+      font-family: var(--font-serif);
+      font-size: clamp(8rem, 15vw, 16rem);
+      font-weight: 900;
+      line-height: 0.8;
+      color: transparent;
+      -webkit-text-stroke: 1px rgba(255,255,255,0.15);
+      text-transform: uppercase;
+      position: relative;
+    }
+
+    .giant-text.kanji {
+      font-size: clamp(6rem, 10vw, 12rem);
+      -webkit-text-stroke: 1px var(--blood);
+      text-shadow: 0 0 30px rgba(184, 10, 31, 0.3);
+      margin-left: 20%;
+      margin-top: -5%;
+      opacity: 0.85;
+    }
+
+    /* "の"字美化 */
+    .particle-no {
+      font-size: 0.7em;
+      opacity: 0.6;
+      -webkit-text-stroke: 1px var(--blood);
+      display: inline-block;
+      transform: translateY(-0.05em);
+      margin-left: 0.05em;
+    }
+
+    /* =========================================
+       4. SCROLLING MARQUEE (Atmosphere)
+       ========================================= */
+    .marquee-container {
+      position: absolute;
+      left: 1.5rem; top: 0; bottom: 0;
+      width: 20px;
+      overflow: hidden;
+      z-index: 4;
+      pointer-events: none;
+      border-right: 1px solid rgba(255,255,255,0.05);
+    }
+
+    .marquee-content {
+      writing-mode: vertical-rl;
+      text-orientation: mixed;
+      white-space: nowrap;
+      font-size: 0.6rem;
+      letter-spacing: 0.4em;
+      color: var(--ash);
+      animation: scrollVert 90s linear infinite;
+    }
+
+    @keyframes scrollVert {
+      0% { transform: translateY(0); }
+      100% { transform: translateY(-50%); }
+    }
+
+    /* =========================================
+       5. MAIN CONTENT & CTA
+       ========================================= */
+    .content-wrapper {
+      position: absolute;
+      right: 12%; top: 50%;
+      transform: translateY(-50%);
+      z-index: 20;
+      width: min(480px, 80vw);
+      display: flex;
+      flex-direction: column;
+      gap: 3rem;
+    }
+
+    .narrative {
+      position: relative;
+      padding-left: 2rem;
+      border-left: 3px solid var(--blood);
+      min-height: 200px;
+    }
+
+    .narrative h2 {
+      font-family: var(--font-serif);
+      font-size: 2rem;
+      font-weight: 600;
+      margin-bottom: 1.5rem;
+      color: var(--fg);
+      line-height: 1.4;
+    }
+
+    .narrative p {
+      font-size: 1rem;
+      line-height: 2;
+      color: #aaa;
+      margin-bottom: 0.8rem;
+    }
+
+    /* Magnetic CTA Button */
+    .magnetic-btn-wrap {
+      align-self: flex-start;
+      padding: 1rem;
+      margin-left: -1rem;
+    }
+
+    .cta-btn {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem 3.5rem;
+      background: transparent;
+      border: 1px solid var(--fg);
+      color: var(--fg);
+      font-family: var(--font-serif);
+      font-weight: 700;
+      font-size: 1.1rem;
+      letter-spacing: 0.3em;
+      text-shadow: 0 0 10px rgba(255, 255, 255, 0.2);
+      overflow: hidden;
+      transition: color 0.4s, letter-spacing 0.4s cubic-bezier(0.76, 0, 0.24, 1), border-color 0.4s;
+    }
+
+    .cta-btn::before {
+      content: '';
+      position: absolute;
+      bottom: 0; left: 0;
+      width: 100%; height: 0%;
+      background: var(--fg);
+      transition: height 0.5s var(--easing);
+      z-index: -1;
+    }
+
+    .cta-btn:hover {
+      color: var(--bg);
+      letter-spacing: 0.5em;
+      border-color: transparent;
+      text-shadow: none;
+    }
+    .cta-btn:hover::before { height: 100%; top: 0; bottom: auto; }
+
+    /* =========================================
+       6. CUSTOM CURSOR
+       ========================================= */
+    #cursor-dot, #cursor-ring {
+      position: fixed;
+      top: 0; left: 0;
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 9999;
+      transform: translate(-50%, -50%);
+    }
+
+    #cursor-dot {
+      width: 6px; height: 6px;
+      background: var(--blood);
+      transition: width 0.3s, height 0.3s;
+    }
+
+    #cursor-ring {
+      width: 40px; height: 40px;
+      border: 1px solid var(--fg);
+      mix-blend-mode: difference;
+      transition: width 0.4s var(--easing), height 0.4s var(--easing), background 0.4s;
+    }
+
+    body.hover-active #cursor-dot { width: 0; height: 0; }
+    body.hover-active #cursor-ring {
+      width: 80px; height: 80px;
+      background: rgba(255, 255, 255, 1);
+      border-color: transparent;
+    }
+
+    /* =========================================
+       7. LANGUAGE SWITCHER
+       ========================================= */
+    .lang-switcher {
+      position: fixed;
+      bottom: 2.5rem;
+      left: 2.5rem;
+      z-index: 100;
+      display: flex;
+      gap: 0.8rem;
+      pointer-events: auto;
+    }
+    .lang-btn {
+      background: transparent;
+      border: 1px solid var(--ash);
+      color: var(--ash);
+      padding: 0.3rem 0.6rem;
+      font-family: var(--font-mono);
+      font-size: 0.6rem;
+      letter-spacing: 0.1em;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    .lang-btn:hover, .lang-btn.active {
+      border-color: var(--fg);
+      color: var(--fg);
+      background: rgba(255,255,255,0.1);
+    }
+    @media (max-width: 768px) {
+      .lang-switcher {
+        bottom: 1rem;
+        left: 1rem;
+        gap: 0.4rem;
+      }
+      .lang-btn {
+        padding: 0.2rem 0.4rem;
+        font-size: 0.5rem;
+      }
+    }
+
+    /* =========================================
+       8. LOADING OVERLAY
+       ========================================= */
+    #loader {
+      position: fixed; inset: 0;
+      background: var(--bg);
+      z-index: 10000;
+      display: flex; flex-direction: column;
+      justify-content: center; align-items: center;
+      transition: transform 1.2s var(--easing);
+    }
+
+    .loader-text {
+      font-family: var(--font-serif);
+      font-size: 2rem;
+      letter-spacing: 0.5em;
+      color: var(--fg);
+      overflow: hidden;
+    }
+
+    .loader-progress {
+      width: 200px; height: 1px;
+      background: rgba(255,255,255,0.1);
+      margin-top: 2rem;
+      position: relative;
+    }
+
+    .loader-bar {
+      position: absolute; top: 0; left: 0;
+      height: 100%; width: 0%;
+      background: var(--blood);
+      transition: width 0.1s;
+    }
+
+    /* =========================================
+       8. MOBILE RESPONSIVE ADAPTATION
+       ========================================= */
+    @media (max-width: 768px) {
+      /* 加载进度条手机端适配 */
+      .loader-text { font-size: 1.4rem; letter-spacing: 0.3em; }
+      .loader-progress { width: 140px; margin-top: 1.5rem; }
+
+      /* 背景大字占满屏幕 */
+      .bg-text-container {
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%);
+        text-align: center;
+        width: 100%;
+      }
+      /* 背景大字：第一行小，第二行大 */
+      .giant-text {
+        font-size: clamp(2.5rem, 12vw, 5rem);
+      }
+      .giant-text.kanji {
+        font-size: clamp(4rem, 20vw, 8rem);
+        margin-left: 0;
+        margin-top: -2%;
+      }
+      /* 手机端"の"字 */
+      .particle-no {
+        font-size: 0.6em;
+        opacity: 0.5;
+      }
+
+      /* 手机端恢复原生系统光标，避免点击偏移和视觉累赘 */
+      html.js-ready * { cursor: auto !important; }
+      #cursor-dot, #cursor-ring { display: none !important; }
+
+      /* HUD框架压缩与重排 */
+      .hud-frame { inset: 1rem; }
+      .hud-top, .hud-bottom {
+        flex-direction: column;
+        align-items: center;
+        gap: 0.4rem;
+        text-align: center;
+        font-size: 0.55rem;
+        padding: 0.5rem;
+      }
+
+      /* 巨大的背景文字居中并缩小 */
+      .bg-text-container {
+        left: 50%;
+        top: 25%;
+        transform: translate(-50%, -50%);
+        text-align: center;
+        width: 100%;
+      }
+      .giant-text { font-size: clamp(4.5rem, 20vw, 8rem); }
+      .giant-text.kanji { font-size: clamp(3.5rem, 15vw, 6rem); margin-left: 0; margin-top: -5px; }
+
+      /* 核心文案区域移至中下部，方便阅读和拇指操作 */
+      .content-wrapper {
+        right: auto;
+        left: 50%;
+        top: 66%;
+        transform: translate(-50%, -50%);
+        width: 88vw;
+        align-items: center;
+        text-align: center;
+        gap: 1.5rem;
+      }
+
+      .narrative {
+        padding-left: 0;
+        border-left: none;
+        border-top: 2px solid var(--blood);
+        padding-top: 1.5rem;
+      }
+      .narrative h2 { font-size: 1.3rem; margin-bottom: 0.8rem; }
+      .narrative p { font-size: 0.8rem; margin-bottom: 0.4rem; line-height: 1.6; }
+
+      .magnetic-btn-wrap {
+        align-self: center;
+        margin-left: 0;
+        padding: 0.5rem;
+      }
+      .cta-btn {
+        padding: 1rem 2rem;
+        font-size: 0.85rem;
+      }
+
+      /* 侧边滚动字幕精简 */
+      .marquee-container {
+        left: 0.5rem;
+        width: 15px;
+        border-right: none;
+      }
+      .marquee-content { font-size: 0.5rem; }
+    }
+
+    /* ===== FULLSCREEN BUTTON ===== */
+    .fs-btn {
+      position: fixed;
+      top: max(1rem, env(safe-area-inset-top, 1rem));
+      right: max(1rem, env(safe-area-inset-right, 1rem));
+      z-index: 100;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      border: 1px solid rgba(255,255,255,0.15);
+      background: rgba(0,0,0,0.3);
+      backdrop-filter: blur(8px);
+      color: rgba(255,255,255,0.5);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.3s ease;
+      padding: 0;
+    }
+    .fs-btn:hover {
+      border-color: rgba(184,10,31,0.5);
+      color: rgba(255,255,255,0.9);
+      background: rgba(184,10,31,0.1);
+    }
+    .fs-btn svg { width: 14px; height: 14px; }
+
+    /* ===== MOBILE FULLSCREEN PROMPT ===== */
+    .fs-prompt {
+      position: fixed;
+      inset: 0;
+      z-index: 20000;
+      background: rgba(3,3,3,0.95);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+      text-align: center;
+    }
+    .fs-prompt-icon {
+      width: 60px;
+      height: 60px;
+      border: 2px solid rgba(184,10,31,0.5);
+      border-radius: 12px;
+      margin-bottom: 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: rgba(184,10,31,0.8);
+    }
+    .fs-prompt-title {
+      font-family: var(--font-serif);
+      font-size: 1.3rem;
+      color: var(--fg);
+      margin-bottom: 0.8rem;
+      letter-spacing: 0.1em;
+    }
+    .fs-prompt-desc {
+      font-size: 0.85rem;
+      color: var(--ash);
+      line-height: 1.6;
+      margin-bottom: 2rem;
+      max-width: 280px;
+    }
+    .fs-prompt-btn {
+      padding: 0.8rem 2rem;
+      background: var(--blood);
+      border: none;
+      color: #fff;
+      font-family: var(--font-serif);
+      font-size: 0.9rem;
+      letter-spacing: 0.2em;
+      cursor: pointer;
+      transition: all 0.3s;
+      margin-bottom: 1rem;
+    }
+    .fs-prompt-btn:hover {
+      background: #9b0024;
+      transform: scale(1.02);
+    }
+    .fs-prompt-skip {
+      font-size: 0.7rem;
+      color: var(--ash);
+      cursor: pointer;
+      text-decoration: underline;
+      opacity: 0.6;
+    }
+    .fs-prompt-skip:hover { opacity: 1; }
+  </style>
+</head>
+<body>
+
+  <!-- FULLSCREEN PROMPT (Mobile) -->
+  <div id="fs-prompt" class="fs-prompt" style="display: none;">
+    <div class="fs-prompt-icon">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/>
+      </svg>
+    </div>
+    <div class="fs-prompt-title">沉浸体验</div>
+    <div class="fs-prompt-desc">点击下方按钮进入全屏模式，获得最佳审判体验</div>
+    <button class="fs-prompt-btn" onclick="enterFullscreen()">进入全屏</button>
+    <span class="fs-prompt-skip" onclick="skipFullscreen()">稍后再说</span>
+  </div>
+
+  <!-- FULLSCREEN BUTTON -->
+  <button id="fs-btn" class="fs-btn" onclick="toggleFullscreen()" aria-label="Toggle fullscreen">
+    <svg id="fs-icon-enter" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/>
+    </svg>
+    <svg id="fs-icon-exit" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none;">
+      <path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"/>
+    </svg>
+  </button>
+
+  <!-- LANGUAGE SWITCHER -->
+  <div class="lang-switcher">
+    <button class="lang-btn active" data-lang="zh">简</button>
+    <button class="lang-btn" data-lang="tw">繁</button>
+    <button class="lang-btn" data-lang="en">EN</button>
+    <button class="lang-btn" data-lang="jp">日</button>
+  </div>
+
+  <!-- LOADING SCREEN -->
+  <div id="loader">
+    <div class="loader-text" data-scramble="WITCH TYPOLOGY">WITCH TYPOLOGY</div>
+    <div class="loader-progress"><div class="loader-bar" id="l-bar"></div></div>
+  </div>
+
+  <!-- CUSTOM CURSOR -->
+  <div id="cursor-dot"></div>
+  <div id="cursor-ring"></div>
+
+  <!-- THE ABYSS CANVAS -->
+  <canvas id="abyss-canvas"></canvas>
+  <div class="vignette"></div>
+  <div class="noise"></div>
+
+  <!-- HUD FRAME -->
+  <div class="hud-frame">
+    <div class="hud-corners"></div>
+    <div class="hud-top">
+      <div><span class="status-blink"></span>SYSTEM ONLINE // TYPE_ANALYSIS_READY</div>
+      <div id="live-time">00:00:00:00</div>
+    </div>
+    <div class="hud-bottom">
+      <div>PERSONALITY PROFILING SYSTEM</div>
+      <div>FILE: WITCH_ARCHETYPE_TEST</div>
+    </div>
+  </div>
+
+  <!-- SCROLLING MARQUEE -->
+  <div class="marquee-container">
+    <div class="marquee-content">
+      你是哪位魔法少女 • 人格类型鉴定中 • 魔女原型觉醒测试 • 你是哪位魔法少女 • 人格类型鉴定中 • 魔女原型觉醒测试 •
+    </div>
+  </div>
+
+  <!-- BACKGROUND TYPOGRAPHY -->
+  <div class="bg-text-container">
+    <div class="giant-text">魔法少女<span class="particle-no">の</span></div>
+    <div class="giant-text kanji">魔女审判</div>
+  </div>
+
+  <!-- MAIN CONTENT -->
+  <div class="content-wrapper">
+    <div class="narrative">
+      <h2 data-scramble="测测你是哪位魔法少女？">测测你是哪位魔法少女？</h2>
+      <p data-scramble="十三种魔女原型，隐藏着你的灵魂画像。">十三种魔女原型，隐藏着你的灵魂画像。</p>
+      <p data-scramble="当绝望与希望交织，你会选择怎样的道路？">当绝望与希望交织，你会选择怎样的道路？</p>
+      <p data-scramble="完成人格测试，揭开属于你的魔法少女类型。">完成人格测试，揭开属于你的魔法少女类型。</p>
+    </div>
+
+    <div class="magnetic-btn-wrap">
+      <button class="cta-btn magnetic" data-scramble="开始测试" onclick="initiateDive()">开始测试</button>
+    </div>
+  </div>
+
+  <script>
+    /* =========================================================
+       0. MULTI-LANGUAGE SYSTEM
+       ========================================================= */
+    const i18n = {
+      zh: {
+        loader: 'WITCH TYPOLOGY',
+        verify: 'ANALYSIS READY',
+        hudTop: 'SYSTEM ONLINE // TYPE_ANALYSIS_READY',
+        hudBottomLeft: 'PERSONALITY PROFILING SYSTEM',
+        hudBottomRight: 'FILE: WITCH_ARCHETYPE_TEST',
+        marquee: '那是一个，很久很久以前的故事 • 曾经在那座岛上，有许多魔女和睦地生活在一起 • 魔女们天生拥有魔法的力量 • 并发展出了独属于她们的文明 • 她们偶尔与来到岛上的人类接触 • 却始终避免与外界打交道，过着平静的生活 • 但—— • 和平的日常，迎来了终结 • 人类的军队出现了 • 他们捕捉、杀害魔女们，还破坏了岛屿 • 活下来的是统治魔女之岛的大魔女中的一人 • 年纪最小，却最擅长魔法的——雪 • 只有小雪一人幸存 • 她决心为同胞复仇 • 为了让人们遭受和魔女们同样的命运 • 她剥裂自己的灵魂 • 将其转化为魔女因子并散播给人类 • 这是一种诅咒 • 能让人类变成自己创造出来的幻想怪物——【魔女】，并最终死去 • 她在复仇心的支配下 • 将一个捡来的人类少女 • 梅露露当作实验体，完成了术法 • 虽然因为人类的繁殖力太强 • 要让每个人都感染魔女因子需要很长时间 • 但她始终没有放弃 • 许多年后 • 当几乎所有人类都成功植入了魔女因子时 • 她遇见了两个少女 • 那就是艾玛和希罗 • 在与她们心灵相通的过程中 • 小雪心中的复仇之火逐渐变得黯淡 • 她的内心产生了迷茫 • 但是她无法停下 • 她不可以停下 • 所以，她把一切都托付给了艾玛 • 将人类的命运以及自己的复仇计划 • 如同将赌注交给命运 • 她把自己精心铺陈的计划 • 托付给了他人之手 • 最终 • 我终究还是没有做到 • 是太过漫长的岁月让感情渐渐麻木 • 还是我与人类交集得太深 • 我的复仇之心已经锈蚀了 • 岛上的魔女们会不会笑我呢 • 那些变成魔女、因此死去的人类们 • 会不会怨恨我呢 • 即便如此 • 此刻我只想 • 任由自己沉浸在这温柔的浅眠之中—— •',
+        kanji: '魔女审判',
+        title: '测测你是哪位魔法少女？',
+        p1: '十三种魔女原型，隐藏着你的灵魂画像。',
+        p2: '当绝望与希望交织，你会选择怎样的道路？',
+        p3: '完成人格测试，揭开属于你的魔法少女类型。',
+        btn: '开始测试',
+        alert: '>> 正在生成你的人格分析报告 <<'
+      },
+      tw: {
+        loader: 'WITCH TYPOLOGY',
+        verify: 'ANALYSIS READY',
+        hudTop: 'SYSTEM ONLINE // TYPE_ANALYSIS_READY',
+        hudBottomLeft: 'PERSONALITY PROFILING SYSTEM',
+        hudBottomRight: 'FILE: WITCH_ARCHETYPE_TEST',
+        marquee: '那是一个，很久很久以前的故事 • 曾经在那座岛上，有许多魔女和睦地生活在一起 • 魔女们天生拥有魔法的力量 • 并发展出了独属于她们的文明 • 她们偶尔与来到岛上的人类接触 • 却始终避免与外界打交道，过着平静的生活 • 但—— • 和平的日常，迎来了终结 • 人类的军队出现了 • 他们捕捉、杀害魔女们，还破坏了岛屿 • 活下来的是统治魔女之岛的大魔女中的一人 • 年纪最小，却最擅长魔法的——雪 • 只有小雪一人幸存 • 她决心为同胞复仇 • 为了让人们遭受和魔女们同样的命运 • 她剥裂自己的灵魂 • 将其转化为魔女因子并散播给人类 • 这是一种诅咒 • 能让人类变成自己创造出来的幻想怪物——【魔女】，并最终死去 • 她在复仇心的支配下 • 将一个捡来的人类少女 • 梅露露当作实验体，完成了术法 • 虽然因为人类的繁殖力太强 • 要让每个人都感染魔女因子需要很长时间 • 但她始终没有放弃 • 许多年后 • 当几乎所有人类都成功植入了魔女因子时 • 她遇见了两个少女 • 那就是艾玛和希罗 • 在与她们心灵相通的过程中 • 小雪心中的复仇之火逐渐变得黯淡 • 她的内心产生了迷茫 • 但是她无法停下 • 她不可以停下 • 所以，她把一切都托付给了艾玛 • 将人类的命运以及自己的复仇计划 • 如同将赌注交给命运 • 她把自己精心铺陈的计划 • 托付给了他人之手 • 最终 • 我终究还是没有做到 • 是太过漫长的岁月让感情渐渐麻木 • 还是我与人类交集得太深 • 我的复仇之心已经锈蚀了 • 岛上的魔女们会不会笑我呢 • 那些变成魔女、因此死去的人类们 • 会不会怨恨我呢 • 即便如此 • 此刻我只想 • 任由自己沉浸在这温柔的浅眠之中—— •',
+        kanji: '魔女審判',
+        title: '測測你是哪位魔法少女？',
+        p1: '十三種魔女原型，隱藏著你的靈魂畫像。',
+        p2: '當絕望與希望交織，你會選擇怎樣的道路？',
+        p3: '完成人格測試，揭開屬於你的魔法少女類型。',
+        btn: '開始測試',
+        alert: '>> 正在生成你的人格分析報告 <<'
+      },
+      en: {
+        loader: 'WITCH TYPOLOGY',
+        verify: 'ANALYSIS READY',
+        hudTop: 'SYSTEM ONLINE // TYPE_ANALYSIS_READY',
+        hudBottomLeft: 'PERSONALITY PROFILING SYSTEM',
+        hudBottomRight: 'FILE: WITCH_ARCHETYPE_TEST',
+        marquee: 'That is a story from a long, long time ago • Once upon a time, many witches lived peacefully together on that island • Witches were born with magical powers • And developed a civilization uniquely their own • They occasionally interacted with humans who came to the island • But always avoided dealing with the outside world, living a quiet life • However— • The peaceful everyday life came to an end • Human armies appeared • They captured and killed the witches, and destroyed the island • The one who survived was one of the Great Witches who ruled the Island of Witches • The youngest, yet most adept at magic—Yuki • Only little Yuki survived • She resolved to avenge her compatriots • To make humans suffer the same fate as the witches • She tore apart her own soul • Transforming it into the Witch Factor and scattering it among humans • This is a curse • That turns humans into the fantasy monsters she created—[Witches], and eventually die • Driven by vengeance • She used a human girl she picked up • Meruru, as a test subject, and completed the spell • Although because human reproduction is too strong • It would take a long time to infect everyone with the Witch Factor • She never gave up • Many years later • When almost all humans had successfully been implanted with the Witch Factor • She met two girls • They were Emma and Hiro • In the process of connecting with their hearts • The fire of revenge in Yuki\'s heart gradually dimmed • Confusion arose in her heart • But she couldn\'t stop • She must not stop • So, she entrusted everything to Emma • Entrusting the fate of humanity and her revenge plan • Like handing over a bet to destiny • She entrusted her carefully laid plan • Into the hands of others • In the end • I still couldn\'t do it • Was it the too long passage of time that made my feelings gradually numb • Or did I get too deeply involved with humans • My heart of vengeance has rusted • Will the witches on the island laugh at me • Those humans who turned into witches and died because of it • Will they resent me • Even so • Right now I just want • To let myself sink into this gentle shallow sleep— •',
+        kanji: 'WITCH TRIAL',
+        title: 'Which Magical Girl Are You?',
+        p1: 'Thirteen witch archetypes hide the portrait of your soul.',
+        p2: 'When despair and hope intertwine, which path will you choose?',
+        p3: 'Complete the personality test to uncover your magical girl type.',
+        btn: 'START TEST',
+        alert: '>> GENERATING YOUR PERSONALITY REPORT <<'
+      },
+      jp: {
+        loader: '魔女タイプ診断',
+        verify: '診断完了',
+        hudTop: 'SYSTEM ONLINE // TYPE_ANALYSIS_READY',
+        hudBottomLeft: '個性解析システム',
+        hudBottomRight: 'FILE: 魔女原型テスト',
+        marquee: 'それは、ずっとずっと昔の物語 • かつてその島には、多くの魔女たちが平和に暮らしていた • 魔女たちは生まれながらにして魔法の力を持ち • 彼女たち独自の文明を築き上げた • 島を訪れる人間と時折交流することはあったが • 常に外界との関わりを避け、静かな生活を送っていた • しかし—— • 平和な日常は終わりを告げた • 人間の軍隊が現れたのだ • 彼らは魔女たちを捕らえ、殺し、島を破壊した • 生き残ったのは、魔女の島を統べる大魔女の一人 • 最年少でありながら、最も魔法に長けていた——ユキ • 小さなユキだけが生き残った • 彼女は同胞の復讐を誓った • 人間たちに魔女と同じ運命を味わわせるために • 彼女は自らの魂を裂き • それを魔女因子に変えて人間たちにばら撒いた • これは呪い • 人間を彼女が創り出した幻想の怪物——【魔女】に変え、最終的に死に至らしめる呪い • 復讐心に支配された彼女は • 拾った人間の少女 • メルルを実験体とし、術式を完成させた • 人間の繁殖力があまりにも強いため • 全員に魔女因子を感染させるには長い時間がかかるが • 彼女は決して諦めなかった • 何年も後 • ほぼすべての人間が魔女因子の植え付けに成功した時 • 彼女は二人の少女に出会った • それがエマとヒロだった • 彼女たちと心を通わせる中で • ユキの心にある復讐の炎は次第に暗くなっていった • 彼女の心に迷いが生じた • しかし、彼女は止まることができなかった • 止まってはいけなかった • だから、彼女はすべてをエマに託した • 人類の運命と自らの復讐計画を • まるで運命に賭けを預けるかのように • 彼女は緻密に練り上げた計画を • 他者の手に委ねた • 結局 • 私はどうしてもできなかった • 長すぎる歳月が感情を麻痺させたのか • それとも人間と深く関わりすぎたのか • 私の復讐心は錆びついてしまった • 島の魔女たちは私を笑うだろうか • 魔女になり、そのために死んでいった人間たちは • 私を恨むだろうか • それでも • 今はただ • この優しい浅い眠りに身を委ねたい—— •',
+        kanji: '魔女裁判',
+        title: 'あなたはどの魔法少女タイプ？',
+        p1: '十三の魔女原型に、あなたの魂の姿が隠されている。',
+        p2: '絶望と希望が交錯する時、あなたはどの道を選ぶ？',
+        p3: '性格診断を完了させ、あなたの魔法少女タイプを暴け。',
+        btn: '診断を始める',
+        alert: '>> 人格分析レポートを生成中 <<'
+      }
+    };
+
+    let currentLang = 'zh';
+    let scramblers = [];
+
+    function switchLang(lang) {
+      currentLang = lang;
+
+      // Update active button
+      document.querySelectorAll('.lang-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.lang === lang);
+      });
+
+      const data = i18n[lang];
+      const fontFamily = lang === 'en' ? 'var(--font-serif)' : 'var(--font-mono)';
+      document.body.style.fontFamily = fontFamily;
+
+      // Update HUD
+      const hudTop = document.querySelector('.hud-top div:first-child');
+      if (hudTop) hudTop.innerHTML = `<span class="status-blink"></span>${data.hudTop}`;
+
+      const hudBottomLeft = document.querySelector('.hud-bottom div:first-child');
+      if (hudBottomLeft) hudBottomLeft.textContent = data.hudBottomLeft;
+
+      const hudBottomRight = document.querySelector('.hud-bottom div:last-child');
+      if (hudBottomRight) hudBottomRight.textContent = data.hudBottomRight;
+
+      // Update marquee
+      const marquee = document.querySelector('.marquee-content');
+      if (marquee) {
+        marquee.textContent = data.marquee + data.marquee;
+      }
+
+      // Update kanji with scramble
+      const kanji = document.querySelector('.giant-text.kanji');
+      if (kanji) {
+        const s = new TextScramble(kanji);
+        s.setText(data.kanji);
+      }
+
+      // Update narrative with scramble
+      const title = document.querySelector('.narrative h2');
+      if (title) {
+        title.setAttribute('data-scramble', data.title);
+        const s = new TextScramble(title);
+        s.setText(data.title);
+      }
+
+      const ps = document.querySelectorAll('.narrative p');
+      const pKeys = ['p1', 'p2', 'p3'];
+      ps.forEach((p, i) => {
+        if (pKeys[i]) {
+          p.setAttribute('data-scramble', data[pKeys[i]]);
+          const s = new TextScramble(p);
+          s.setText(data[pKeys[i]]);
+        }
+      });
+
+      // Update button
+      const btn = document.querySelector('.cta-btn');
+      if (btn) {
+        btn.setAttribute('data-scramble', data.btn);
+        const s = new TextScramble(btn);
+        s.setText(data.btn);
+      }
+
+      localStorage.setItem('witch-trial-locale', lang === 'zh' ? 'zh-CN' : lang === 'tw' ? 'zh-TW' : lang === 'jp' ? 'ja' : lang);
+    }
+
+    // Bind language buttons
+    document.querySelectorAll('.lang-btn').forEach(btn => {
+      btn.addEventListener('click', () => switchLang(btn.dataset.lang));
+    });
+
+    /* =========================================================
+       1. TEXT SCRAMBLE / DECODE EFFECT 
+       ========================================================= */
+    class TextScramble {
+      constructor(el) {
+        this.el = el;
+        this.chars = '!<>-_\\/[]{}—=+*^?#________';
+        this.update = this.update.bind(this);
+      }
+      setText(newText) {
+        const oldText = this.el.innerText;
+        const length = Math.max(oldText.length, newText.length);
+        const promise = new Promise((resolve) => this.resolve = resolve);
+        this.queue = [];
+        for (let i = 0; i < length; i++) {
+          const from = oldText[i] || '';
+          const to = newText[i] || '';
+          const start = Math.floor(Math.random() * 40);
+          const end = start + Math.floor(Math.random() * 40);
+          this.queue.push({ from, to, start, end });
+        }
+        cancelAnimationFrame(this.frameRequest);
+        this.frame = 0;
+        this.update();
+        return promise;
+      }
+      update() {
+        let output = '';
+        let complete = 0;
+        for (let i = 0, n = this.queue.length; i < n; i++) {
+          let { from, to, start, end, char } = this.queue[i];
+          if (this.frame >= end) {
+            complete++;
+            output += to;
+          } else if (this.frame >= start) {
+            if (!char || Math.random() < 0.28) {
+              char = this.randomChar();
+              this.queue[i].char = char;
+            }
+            output += `<span style="color:var(--blood)">${char}</span>`;
+          } else {
+            output += from;
+          }
+        }
+        this.el.innerHTML = output;
+        if (complete === this.queue.length) {
+          this.resolve();
+        } else {
+          this.frameRequest = requestAnimationFrame(this.update);
+          this.frame++;
+        }
+      }
+      randomChar() {
+        return this.chars[Math.floor(Math.random() * this.chars.length)];
+      }
+    }
+
+    /* =========================================================
+       2. CANVAS FLUID PARTICLE SWARM 
+       ========================================================= */
+    const canvas = document.getElementById('abyss-canvas');
+    const ctx = canvas.getContext('2d');
+    let width, height;
+    let particles = [];
+    const mouse = { x: -1000, y: -1000 };
+
+    function resize() {
+      width = canvas.width = window.innerWidth;
+      height = canvas.height = window.innerHeight;
+    }
+    window.addEventListener('resize', resize);
+    resize();
+
+    // 适配电脑鼠标
+    window.addEventListener('mousemove', (e) => {
+      mouse.x = e.clientX;
+      mouse.y = e.clientY;
+    });
+
+    // 适配手机滑动
+    window.addEventListener('touchmove', (e) => {
+      mouse.x = e.touches[0].clientX;
+      mouse.y = e.touches[0].clientY;
+    }, { passive: true });
+
+    class Particle {
+      constructor() {
+        this.x = Math.random() * width;
+        this.y = Math.random() * height;
+        this.vx = (Math.random() - 0.5) * 2;
+        this.vy = (Math.random() - 0.5) * 2;
+        this.life = Math.random() * 0.5 + 0.1;
+        this.color = Math.random() > 0.85 ? '#b80a1f' : '#333333';
+        this.size = Math.random() * 2;
+        this.history = [];
+      }
+
+      update() {
+        this.history.push({ x: this.x, y: this.y });
+        if (this.history.length > 20) this.history.shift();
+
+        let dx = mouse.x - this.x;
+        let dy = mouse.y - this.y;
+        let dist = Math.sqrt(dx * dx + dy * dy);
+
+        // 增加排斥半径并强化排斥力，让粒子逃逸更明显
+        if (dist < 350) {
+          let force = (350 - dist) / 350;
+          let angle = Math.atan2(dy, dx);
+          // 强化垂直切线方向的旋转力
+          this.vx += Math.cos(angle + Math.PI/2) * force * 0.8;
+          this.vy += Math.sin(angle + Math.PI/2) * force * 0.8;
+          // 强化直接的排斥力
+          this.vx -= (dx / dist) * force * 0.5;
+          this.vy -= (dy / dist) * force * 0.5;
+        }
+
+        // 降低摩擦力，让粒子流动更顺滑
+        this.vx *= 0.99;
+        this.vy *= 0.99;
+        this.vx += Math.sin(this.y * 0.01) * 0.15;
+        this.vy += Math.cos(this.x * 0.01) * 0.15;
+
+        this.x += this.vx;
+        this.y += this.vy;
+
+        if (this.x > width + 50) this.x = -50;
+        if (this.x < -50) this.x = width + 50;
+        if (this.y > height + 50) this.y = -50;
+        if (this.y < -50) this.y = height + 50;
+      }
+
+      draw() {
+        if (this.history.length < 2) return;
+        ctx.beginPath();
+        ctx.moveTo(this.history[0].x, this.history[0].y);
+        for (let i = 1; i < this.history.length; i++) {
+          ctx.lineTo(this.history[i].x, this.history[i].y);
+        }
+        ctx.strokeStyle = this.color;
+        ctx.lineWidth = this.size;
+        ctx.lineCap = 'round';
+        ctx.globalAlpha = this.life;
+        ctx.stroke();
+      }
+    }
+
+    for (let i = 0; i < 150; i++) particles.push(new Particle());
+
+    function animateCanvas() {
+      ctx.fillStyle = 'rgba(3, 3, 3, 0.25)';
+      ctx.fillRect(0, 0, width, height);
+
+      ctx.globalCompositeOperation = 'lighter';
+      for (let p of particles) {
+        p.update();
+        p.draw();
+      }
+      ctx.globalCompositeOperation = 'source-over';
+      requestAnimationFrame(animateCanvas);
+    }
+    animateCanvas();
+
+    /* =========================================================
+       3. CUSTOM CURSOR LOGIC
+       ========================================================= */
+    const cursorDot = document.getElementById('cursor-dot');
+    const cursorRing = document.getElementById('cursor-ring');
+    let cx = window.innerWidth / 2, cy = window.innerHeight / 2;
+    let rx = cx, ry = cy;
+
+    function animateCursor() {
+      if (window.innerWidth > 768) { // 仅在非手机端更新光标
+        cursorDot.style.transform = `translate(calc(${mouse.x}px - 50%), calc(${mouse.y}px - 50%))`;
+        rx += (mouse.x - rx) * 0.15;
+        ry += (mouse.y - ry) * 0.15;
+        cursorRing.style.transform = `translate(calc(${rx}px - 50%), calc(${ry}px - 50%))`;
+      }
+      requestAnimationFrame(animateCursor);
+    }
+    animateCursor();
+
+    document.querySelectorAll('button, a, .magnetic').forEach(el => {
+      el.addEventListener('mouseenter', () => document.body.classList.add('hover-active'));
+      el.addEventListener('mouseleave', () => document.body.classList.remove('hover-active'));
+    });
+
+    /* =========================================================
+       4. MAGNETIC BUTTON EFFECT
+       ========================================================= */
+    const magneticWrap = document.querySelector('.magnetic-btn-wrap');
+    const magneticBtn = document.querySelector('.cta-btn');
+
+    magneticWrap.addEventListener('mousemove', (e) => {
+      if (window.innerWidth <= 768) return; // 手机端关闭磁吸互动
+      const rect = magneticWrap.getBoundingClientRect();
+      const hx = rect.left + rect.width / 2;
+      const hy = rect.top + rect.height / 2;
+      const dx = (e.clientX - hx) * 0.4;
+      const dy = (e.clientY - hy) * 0.4;
+      magneticBtn.style.transform = `translate(${dx}px, ${dy}px)`;
+    });
+
+    magneticWrap.addEventListener('mouseleave', () => {
+      magneticBtn.style.transform = 'translate(0px, 0px)';
+      magneticBtn.style.transition = 'transform 0.5s cubic-bezier(0.76, 0, 0.24, 1)';
+    });
+    magneticWrap.addEventListener('mouseenter', () => {
+      if (window.innerWidth > 768) {
+        magneticBtn.style.transition = 'none';
+      }
+    });
+
+    /* =========================================================
+       5. LIVE TIMESTAMP 
+       ========================================================= */
+    function updateTime() {
+      const now = new Date();
+      const h = String(now.getHours()).padStart(2, '0');
+      const m = String(now.getMinutes()).padStart(2, '0');
+      const s = String(now.getSeconds()).padStart(2, '0');
+      const ms = String(Math.floor(now.getMilliseconds() / 10)).padStart(2, '0');
+      document.getElementById('live-time').innerText = `T-${h}:${m}:${s}:${ms}`;
+      requestAnimationFrame(updateTime);
+    }
+    updateTime();
+
+    /* =========================================================
+       6. BOOT SEQUENCE
+       ========================================================= */
+    function startBootSequence() {
+      const bar = document.getElementById('l-bar');
+      const loaderText = document.querySelector('.loader-text');
+
+      if (!bar || !loaderText) {
+        console.error('Loader elements not found');
+        return;
+      }
+
+      const scrambler = new TextScramble(loaderText);
+
+      let progress = 0;
+      const interval = setInterval(() => {
+        progress += Math.random() * 15;
+        if (progress > 100) progress = 100;
+        bar.style.width = progress + '%';
+
+        if (progress === 100) {
+          clearInterval(interval);
+          scrambler.setText('ACCESS GRANTED').then(() => {
+            setTimeout(() => {
+              document.getElementById('loader').style.transform = 'translateY(-100%)';
+
+              const scrambles = document.querySelectorAll('[data-scramble]');
+              scrambles.forEach((el, index) => {
+                const targetText = el.getAttribute('data-scramble');
+                el.innerText = '';
+                const s = new TextScramble(el);
+                setTimeout(() => s.setText(targetText), 500 + index * 200);
+              });
+            }, 800);
+          });
+        }
+      }, 100);
+    }
+
+    // 使用 DOMContentLoaded 确保尽早启动，不等待外部资源
+    document.addEventListener('DOMContentLoaded', () => {
+      // 稍微延迟以确保动画流畅
+      setTimeout(startBootSequence, 100);
+    });
+
+    // 备用：如果 DOMContentLoaded 已错过，立即启动
+    if (document.readyState === 'complete' || document.readyState === 'interactive') {
+      setTimeout(startBootSequence, 100);
+    }
+
+    /* =========================================================
+       7. ACTION
+       ========================================================= */
+    function initiateDive() {
+      document.body.style.transition = 'background 0.2s';
+      document.body.style.background = '#b80a1f';
+      document.querySelector('.content-wrapper').style.opacity = '0';
+      document.querySelector('.bg-text-container').style.opacity = '0';
+
+      setTimeout(() => {
+        document.body.style.background = '#000';
+        setTimeout(() => {
+          window.location.href = '/test';
+        }, 300);
+      }, 150);
+    }
+
+    // Restore saved language preference
+    document.addEventListener('DOMContentLoaded', () => {
+      const saved = localStorage.getItem('witch-trial-locale');
+      if (saved) {
+        const langMap = { 'zh-CN': 'zh', 'zh-TW': 'tw', 'en': 'en', 'ja': 'jp' };
+        const lang = langMap[saved] || 'zh';
+        if (lang !== 'zh') {
+          setTimeout(() => switchLang(lang), 1500);
+        }
+      }
+    });
+
+    /* =========================================================
+       8. FULLSCREEN FUNCTIONALITY
+       ========================================================= */
+    function toggleFullscreen() {
+      if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+        const el = document.documentElement;
+        if (el.requestFullscreen) el.requestFullscreen();
+        else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
+      } else {
+        if (document.exitFullscreen) document.exitFullscreen();
+        else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+      }
+    }
+
+    function enterFullscreen() {
+      const el = document.documentElement;
+      if (el.requestFullscreen) el.requestFullscreen();
+      else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
+      document.getElementById('fs-prompt').style.display = 'none';
+      localStorage.setItem('witch-trial-fs-prompted', 'true');
+    }
+
+    function skipFullscreen() {
+      document.getElementById('fs-prompt').style.display = 'none';
+      localStorage.setItem('witch-trial-fs-prompted', 'true');
+    }
+
+    function updateFullscreenIcon() {
+      const isFS = !!(document.fullscreenElement || document.webkitFullscreenElement);
+      document.getElementById('fs-icon-enter').style.display = isFS ? 'none' : 'block';
+      document.getElementById('fs-icon-exit').style.display = isFS ? 'block' : 'none';
+    }
+
+    document.addEventListener('fullscreenchange', updateFullscreenIcon);
+    document.addEventListener('webkitfullscreenchange', updateFullscreenIcon);
+
+    // Show fullscreen prompt on mobile devices
+    document.addEventListener('DOMContentLoaded', () => {
+      const isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+      const alreadyPrompted = localStorage.getItem('witch-trial-fs-prompted');
+      if (isMobile && !alreadyPrompted) {
+        setTimeout(() => {
+          document.getElementById('fs-prompt').style.display = 'flex';
+        }, 2000);
+      }
+    });
+  </script>
+</body>
+</html>

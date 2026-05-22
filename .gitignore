@@ -51,3 +51,10 @@ next-env.d.ts
 *.html
 .playwright-mcp/
 .claude/
+
+# playwright artifacts
+test-results/
+
+# allow committed static assets in public/
+!public/index.html
+!public/og-image.png

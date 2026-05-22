@@ -1,20 +1,31 @@
 import { NextRequest, NextResponse } from "next/server";
+import { resultsRequestSchema } from "@/lib/schemas";
 import { db } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 
 export async function POST(req: NextRequest) {
-  const body = await req.json();
+  let body: unknown;
+  try {
+    body = await req.json();
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
+  }
+
+  const parsed = resultsRequestSchema.safeParse(body);
+  if (!parsed.success) {
+    return NextResponse.json(
+      { error: "Validation failed", details: parsed.error.flatten() },
+      { status: 400 }
+    );
+  }
+
   const {
     sessionId, resultCode, similarity, userVector, top3, borderType,
     answers, gateValue, triggerFired,
     userAgent, screenRes, language, timezone,
     startedAt, completedAt, duration,
-  } = body;
-
-  const ipAddress = req.headers.get("x-forwarded-for")?.split(",")[0]
-    ?? req.headers.get("x-real-ip")
-    ?? "unknown";
+  } = parsed.data;
 
   const record = await db.testRecord.create({
     data: {
@@ -27,7 +38,7 @@ export async function POST(req: NextRequest) {
       gateValue: gateValue ?? null,
       triggerFired: triggerFired ?? null,
       userAgent: userAgent ?? null,
-      ipAddress,
+      ipAddress: null,
       screenRes: screenRes ?? null,
       language: language ?? null,
       timezone: timezone ?? null,
@@ -35,7 +46,7 @@ export async function POST(req: NextRequest) {
       completedAt: completedAt ? new Date(completedAt) : null,
       duration: duration ?? null,
       answers: {
-        create: (answers ?? []).map((a: { questionId: number; optionId: number }) => ({
+        create: (answers ?? []).map((a) => ({
           questionId: a.questionId,
           optionId: a.optionId,
         })),
@@ -44,20 +55,20 @@ export async function POST(req: NextRequest) {
   });
 
   const totalParticipants = await db.testRecord.count();
-  const typeRows = await db.testRecord.groupBy({ by: ["resultCode"], _count: true });
-  const typeCount = typeRows.find((r: { resultCode: string; _count: number }) => r.resultCode === resultCode)?._count ?? 0;
+  const typeCount = await db.testRecord.count({ where: { resultCode } });
   const typePercentage = totalParticipants > 0 ? Math.round((typeCount / totalParticipants) * 1000) / 10 : 0;
 
-  const sameTypeRecords = await db.testRecord.findMany({
-    where: { resultCode },
-    orderBy: { similarity: "desc" },
-    select: { id: true },
+  // Rank within same-type records by similarity (higher = better). Ties resolved by older recordId first.
+  const betterCount = await db.testRecord.count({
+    where: {
+      resultCode,
+      OR: [
+        { similarity: { gt: similarity } },
+        { similarity, id: { lt: record.id } },
+      ],
+    },
   });
-  const rank = sameTypeRecords.findIndex((r: { id: number }) => r.id === record.id) + 1;
-
-  // Look up personality name for the message
-  const personality = await db.personalityType.findUnique({ where: { code: resultCode }, select: { name: true } });
-  const displayName = personality?.name ?? resultCode;
+  const rank = betterCount + 1;
 
   return NextResponse.json({
     recordId: record.id,
@@ -65,6 +76,5 @@ export async function POST(req: NextRequest) {
     totalParticipants,
     typeCount,
     typePercentage,
-    message: `你是第 ${typeCount} 位被判定为「${displayName}」的被审判者，全球只有 ${typePercentage}% 的人和你一样`,
   });
 }

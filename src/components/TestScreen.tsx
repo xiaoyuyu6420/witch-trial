@@ -101,7 +101,8 @@ export default function TestScreen({ questions, onComplete, onExit }: TestScreen
     if (!p) return;
     pendingRef.current = null;
     if (p.isLast) {
-      document.getElementById("progress-line")!.style.width = "100%";
+      const progressLine = document.getElementById("progress-line");
+      if (progressLine) progressLine.style.width = "100%";
       localStorage.removeItem(STORAGE_KEY);
       onComplete({ answers: p.answers, gateValue: p.gateValue, triggerFired: p.triggerFired });
     } else {
@@ -178,15 +179,37 @@ export default function TestScreen({ questions, onComplete, onExit }: TestScreen
   if (!current) return null;
 
   const isGateOrTrigger = current.type === "gate" || current.type === "trigger";
+  const questionLabelId = `q-text-${current.id}`;
 
   return (
     <div className="view-test" style={{ position: "relative", width: "100%", height: "100%" }}>
       {/* EXIT button */}
       <button type="button" onClick={() => { localStorage.removeItem(STORAGE_KEY); onExit(); }}
-        style={{ position: "absolute", top: "1.2rem", left: "1.2rem", zIndex: 30, background: "transparent", border: "none", color: "rgba(255,255,255,0.2)", fontFamily: "var(--f-title)", fontSize: "0.7rem", letterSpacing: "0.15em", padding: "0.3rem 0.6rem" }}>
+        style={{
+          position: "absolute",
+          top: "max(1.2rem, env(safe-area-inset-top, 1.2rem))",
+          right: "max(1.2rem, env(safe-area-inset-right, 1.2rem))",
+          zIndex: 30,
+          background: "transparent",
+          border: "none",
+          color: "rgba(255,255,255,0.4)",
+          fontFamily: "var(--f-title)",
+          fontSize: "0.7rem",
+          letterSpacing: "0.15em",
+          padding: "0.3rem 0.5rem",
+          cursor: "pointer",
+          transition: "all 0.3s ease",
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.color = "rgba(184, 10, 31, 0.8)";
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.color = "rgba(255,255,255,0.4)";
+        }}
+      >
         {t("test.exit")}
       </button>
-      <div className="watermark-index">{ROMAN[currentIndex] || (currentIndex + 1)}</div>
+      <div className="watermark-index" aria-hidden="true">{ROMAN[currentIndex] || (currentIndex + 1)}</div>
       <div ref={stageRef} id="test-stage-wrapper" className={stageFadeOut ? "stage-fade-out" : ""}>
         <div className="question-stage">
           <div className="q-meta">
@@ -196,16 +219,25 @@ export default function TestScreen({ questions, onComplete, onExit }: TestScreen
             </span>
             <span className="q-hint">{typeof window !== "undefined" && !("ontouchstart" in window) ? t("test.keyHint") : ""}</span>
           </div>
-          <div className="q-text">{current.text}</div>
+          <div className="q-text" id={questionLabelId}>{current.text}</div>
         </div>
-        <div className="options-stage">
+        <div className="options-stage" role="radiogroup" aria-labelledby={questionLabelId}>
           {current.options.map((option, idx) => (
-            <div key={option.id} className="opt-block" style={{ animationDelay: `${idx * 0.1}s` }} onClick={(e) => handleSelect(e.currentTarget, option)}>
+            <button
+              type="button"
+              key={option.id}
+              className="opt-block"
+              role="radio"
+              aria-checked={false}
+              aria-label={option.label}
+              style={{ animationDelay: `${idx * 0.1}s` }}
+              onClick={(e) => handleSelect(e.currentTarget, option)}
+            >
               <div className="opt-content">
-                <div className="opt-index">{ROMAN[idx]}</div>
+                <div className="opt-index" aria-hidden="true">{ROMAN[idx]}</div>
                 <div className="opt-text">{option.label}</div>
               </div>
-            </div>
+            </button>
           ))}
         </div>
       </div>
