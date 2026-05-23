@@ -690,7 +690,13 @@
       letter-spacing: 0.2em;
     }
 
-    .hero__cta-wrap { padding: 0.5rem; margin-top: 0.4rem; }
+    .hero__cta-wrap.magnetic-btn-wrap {
+      /* Override the legacy left-anchored padding from the old layout — */
+      /* hero stack is centered, button needs to stay center.            */
+      align-self: center;
+      margin: 0.4rem 0 0;
+      padding: 0.5rem;
+    }
     .hero__cta {
       position: relative;
       padding: 1rem 3rem;
@@ -1228,30 +1234,32 @@
        4. MAGNETIC BUTTON EFFECT
        ========================================================= */
     const magneticWrap = document.querySelector('.magnetic-btn-wrap');
-    const magneticBtn = document.querySelector('.cta-btn');
+    const magneticBtn = document.querySelector('.hero__cta, .cta-btn');
 
-    magneticWrap.addEventListener('mousemove', (e) => {
-      if (window.innerWidth <= 768) return; // 手机端关闭磁吸互动
-      const rect = magneticWrap.getBoundingClientRect();
-      const hx = rect.left + rect.width / 2;
-      const hy = rect.top + rect.height / 2;
-      const dx = (e.clientX - hx) * 0.4;
-      const dy = (e.clientY - hy) * 0.4;
-      magneticBtn.style.transform = `translate(${dx}px, ${dy}px)`;
-    });
+    if (magneticWrap && magneticBtn) {
+      magneticWrap.addEventListener('mousemove', (e) => {
+        if (window.innerWidth <= 768) return;
+        const rect = magneticWrap.getBoundingClientRect();
+        const hx = rect.left + rect.width / 2;
+        const hy = rect.top + rect.height / 2;
+        const dx = (e.clientX - hx) * 0.4;
+        const dy = (e.clientY - hy) * 0.4;
+        magneticBtn.style.transform = `translate(${dx}px, ${dy}px)`;
+      });
 
-    magneticWrap.addEventListener('mouseleave', () => {
-      magneticBtn.style.transform = 'translate(0px, 0px)';
-      magneticBtn.style.transition = 'transform 0.5s cubic-bezier(0.76, 0, 0.24, 1)';
-    });
-    magneticWrap.addEventListener('mouseenter', () => {
-      if (window.innerWidth > 768) {
-        magneticBtn.style.transition = 'none';
-      }
-    });
+      magneticWrap.addEventListener('mouseleave', () => {
+        magneticBtn.style.transform = 'translate(0px, 0px)';
+        magneticBtn.style.transition = 'transform 0.5s cubic-bezier(0.76, 0, 0.24, 1)';
+      });
+      magneticWrap.addEventListener('mouseenter', () => {
+        if (window.innerWidth > 768) {
+          magneticBtn.style.transition = 'none';
+        }
+      });
+    }
 
     /* =========================================================
-       5. LIVE TIMESTAMP 
+       5. LIVE TIMESTAMP
        ========================================================= */
     function updateTime() {
       const now = new Date();
