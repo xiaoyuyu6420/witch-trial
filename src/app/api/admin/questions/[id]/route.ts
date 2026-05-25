@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { checkAdminAuth } from "@/lib/admin-auth";
+import { adminQuestionUpdateSchema } from "@/lib/schemas";
 
 export const dynamic = "force-dynamic";
 
@@ -28,15 +29,14 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   if (authErr) return authErr;
   try {
     const { id } = await params;
-    const body = (await req.json()) as {
-      dim: string;
-      text: string;
-      order: number;
-      type: string;
-      meta: string;
-      translations?: string;
-      options: { id?: number; label: string; score: number; value?: string; trigger?: string }[];
-    };
+    const parsed = adminQuestionUpdateSchema.safeParse(await req.json());
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: "Validation failed", details: parsed.error.flatten() },
+        { status: 400 }
+      );
+    }
+    const body = parsed.data;
 
     const question = await db.question.update({
       where: { id: Number(id) },
@@ -58,13 +58,13 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       if (o.id) {
         await db.option.upsert({
           where: { id: o.id },
-          update: { label: o.label, score: o.score, value: o.value, trigger: o.trigger },
+          update: { label: o.label, score: o.score, value: o.value ?? undefined, trigger: o.trigger ?? undefined },
           create: {
             questionId: question.id,
             label: o.label,
             score: o.score,
-            value: o.value,
-            trigger: o.trigger,
+            value: o.value ?? undefined,
+            trigger: o.trigger ?? undefined,
           },
         });
       } else {
@@ -73,8 +73,8 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
             questionId: question.id,
             label: o.label,
             score: o.score,
-            value: o.value,
-            trigger: o.trigger,
+            value: o.value ?? undefined,
+            trigger: o.trigger ?? undefined,
           },
         });
         optionIds.add(created.id);

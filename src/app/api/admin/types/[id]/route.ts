@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { checkAdminAuth } from "@/lib/admin-auth";
+import { adminTypeUpdateSchema } from "@/lib/schemas";
 
 export const dynamic = "force-dynamic";
 
@@ -25,21 +26,28 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   if (authErr) return authErr;
   try {
     const { id } = await params;
-    const body = (await req.json()) as {
-      name?: string;
-      subtitle?: string;
-      group?: string;
-      vector?: string;
-      slogan?: string;
-      desc?: string;
-      keywords?: string;
-      special?: boolean;
-      translations?: string;
-    };
+    const parsed = adminTypeUpdateSchema.safeParse(await req.json());
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: "Validation failed", details: parsed.error.flatten() },
+        { status: 400 }
+      );
+    }
+    const body = parsed.data;
 
     const t = await db.personalityType.update({
       where: { id: Number(id) },
-      data: body,
+      data: {
+        name: body.name,
+        subtitle: body.subtitle ?? null,
+        group: body.group,
+        vector: body.vector,
+        slogan: body.slogan,
+        desc: body.desc,
+        keywords: body.keywords ?? null,
+        ...(body.special !== undefined ? { special: body.special } : {}),
+        ...(body.translations !== undefined ? { translations: body.translations } : {}),
+      },
     });
 
     return NextResponse.json(t);

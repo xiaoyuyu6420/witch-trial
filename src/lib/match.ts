@@ -65,7 +65,7 @@ export interface MatchResult {
   similarity: number;
   userVector: string;
   templateVector: string;
-  top3: { code: string; name: string; similarity: number }[];
+  top3: { code: string; name: string; similarity: number; translations?: string }[];
   group: string;
   borderType: boolean;
   special: boolean;
@@ -129,7 +129,7 @@ export function match(
         similarity: 100,
         userVector: specialUserVec,
         templateVector: t.vector,
-        top3: [{ code: t.code, name: t.name, similarity: 100 }],
+        top3: [{ code: t.code, name: t.name, similarity: 100, translations: t.translations }],
         group: "special",
         borderType: false,
         special: true,
@@ -195,7 +195,7 @@ export function match(
           similarity: best.sim,
           userVector: userVec,
           templateVector: unsetType.vector,
-          top3: top3.map((r) => ({ code: r.type.code, name: r.type.name, similarity: r.sim })),
+          top3: top3.map((r) => ({ code: r.type.code, name: r.type.name, similarity: r.sim, translations: r.type.translations })),
           group: "fallback",
           borderType: true,
           special: false,
@@ -216,7 +216,7 @@ export function match(
     similarity: best.sim,
     userVector: userVec,
     templateVector: best.type.vector,
-    top3: top3.map((r) => ({ code: r.type.code, name: r.type.name, similarity: r.sim })),
+    top3: top3.map((r) => ({ code: r.type.code, name: r.type.name, similarity: r.sim, translations: r.type.translations })),
     group: best.type.group,
     borderType,
     special: false,

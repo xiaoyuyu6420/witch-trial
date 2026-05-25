@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { checkAdminAuth } from "@/lib/admin-auth";
+import { adminQuestionBulkSchema } from "@/lib/schemas";
 
 export const dynamic = "force-dynamic";
 
@@ -23,15 +24,14 @@ export async function PUT(req: NextRequest) {
   const authErr = checkAdminAuth(req);
   if (authErr) return authErr;
   try {
-    const questions = (await req.json()) as {
-      id?: number;
-      dim: string;
-      text: string;
-      order: number;
-      type: string;
-      meta: string;
-      options: { id?: number; label: string; score: number; value?: string; trigger?: string }[];
-    }[];
+    const parsed = adminQuestionBulkSchema.safeParse(await req.json());
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: "Validation failed", details: parsed.error.flatten() },
+        { status: 400 }
+      );
+    }
+    const questions = parsed.data;
 
     await db.$transaction(
       questions.map((q) =>
@@ -48,8 +48,8 @@ export async function PUT(req: NextRequest) {
               create: q.options.map((o) => ({
                 label: o.label,
                 score: o.score,
-                value: o.value,
-                trigger: o.trigger,
+                value: o.value ?? undefined,
+                trigger: o.trigger ?? undefined,
               })),
             },
           },
@@ -64,13 +64,13 @@ export async function PUT(req: NextRequest) {
         if (o.id) {
           await db.option.upsert({
             where: { id: o.id },
-            update: { label: o.label, score: o.score, value: o.value, trigger: o.trigger },
+            update: { label: o.label, score: o.score, value: o.value ?? undefined, trigger: o.trigger ?? undefined },
             create: {
               questionId: q.id,
               label: o.label,
               score: o.score,
-              value: o.value,
-              trigger: o.trigger,
+              value: o.value ?? undefined,
+              trigger: o.trigger ?? undefined,
             },
           });
         }

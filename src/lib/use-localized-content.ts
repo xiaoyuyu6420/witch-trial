@@ -32,8 +32,9 @@ export function useLocalizedContent(
 
   return useMemo(() => {
     const resolve = (field: string, fallback: string) => {
-      const localized = dbTrans[locale]?.[field];
-      if (localized && localized !== code) return localized;
+      const dbVal = dbTrans[locale]?.[field];
+      if (dbVal) return dbVal;
+      if (locale === "zh-CN") return fallback;
       const i18nKey = `types.${code}.${field}`;
       const i18nVal = t(i18nKey);
       return i18nVal !== i18nKey ? i18nVal : fallback;

@@ -12,7 +12,7 @@ import { useI18n } from "@/lib/i18n";
 interface ResultData {
   code: string; name: string; subtitle?: string; slogan: string; desc: string; keywords?: string;
   similarity: number; userVector: string; templateVector: string;
-  top3: { code: string; name: string; similarity: number }[];
+  top3: { code: string; name: string; similarity: number; translations?: string }[];
   group: string; borderType: boolean; special: boolean;
   translations?: string;
 }
@@ -34,10 +34,21 @@ export default function ResultScreen({ result, stats, onRestart }: ResultScreenP
   const shareCardRef = useRef<HTMLDivElement>(null);
   const [sharing, setSharing] = useState(false);
   const [showDetail, setShowDetail] = useState(false);
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const localized = useLocalizedContent(
     result.code, result.name, result.slogan, result.desc, result.keywords, result.subtitle, result.translations
   );
+
+  const resolveTypeName = (entry: { code: string; name: string; translations?: string }) => {
+    try {
+      const dbVal = JSON.parse(entry.translations || "{}")[locale]?.name;
+      if (dbVal) return dbVal;
+    } catch { /* ignore */ }
+    if (locale === "zh-CN") return entry.name;
+    const i18nKey = `types.${entry.code}.name`;
+    const i18nVal = t(i18nKey);
+    return i18nVal !== i18nKey ? i18nVal : entry.name;
+  };
 
   // 添加 revealed 类使结果页面可见
   useEffect(() => {
@@ -118,8 +129,8 @@ export default function ResultScreen({ result, stats, onRestart }: ResultScreenP
 
           <div className="r-stats">
             <span>{result.similarity}%</span>
-            {result.top3.length > 1 && <span>{t(`types.${result.top3[1].code}.name`)} {result.top3[1].similarity}%</span>}
-            {result.top3.length > 2 && <span>{t(`types.${result.top3[2].code}.name`)} {result.top3[2].similarity}%</span>}
+            {result.top3.length > 1 && <span>{resolveTypeName(result.top3[1])} {result.top3[1].similarity}%</span>}
+            {result.top3.length > 2 && <span>{resolveTypeName(result.top3[2])} {result.top3[2].similarity}%</span>}
           </div>
 
           <div className="r-slogan">{localized.slogan}</div>
