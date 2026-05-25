@@ -12,7 +12,7 @@ import type { QuizQuestion } from "@/components/TestScreen";
 interface MatchResult {
   code: string; name: string; subtitle?: string; slogan: string; desc: string; keywords?: string;
   similarity: number; userVector: string; templateVector: string;
-  top3: { code: string; name: string; similarity: number }[];
+  top3: { code: string; name: string; similarity: number; translations?: string }[];
   group: string; borderType: boolean; special: boolean;
   translations?: string;
 }
@@ -23,39 +23,49 @@ export default function TestPage() {
   const [stats, setStats] = useState<{ totalParticipants: number; typePercentage: number; typeCount: number } | null>(null);
   const [loading, setLoading] = useState(false);
   const [showResult, setShowResult] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const { t } = useI18n();
   const startedAtRef = useRef<number>(0);
 
-  // Fetch questions
-  useEffect(() => {
-    startedAtRef.current = Date.now();
+  const loadQuiz = useCallback(() => {
     fetch("/api/quiz")
-      .then((r) => r.json())
+      .then((r) => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        return r.json();
+      })
       .then((data) => {
         const qs: QuizQuestion[] = data.questions.map((q: Record<string, unknown>) => ({
           id: q.id as number, dim: q.dim as string, text: q.text as string,
           order: q.order as number, type: q.type as string, meta: (q.meta as string) || "",
           translations: (q.translations as string) || "{}",
           options: (q.options as Record<string, unknown>[]).map((o) => ({
-            id: o.id as number, label: o.label as string, score: o.score as number,
-            value: o.value as string | null, trigger: o.trigger as string | null,
+            id: o.id as number, label: o.label as string,
+            value: (o.value as string | null) ?? null,
           })),
         }));
         setQuestions(qs);
+        setLoadError(null);
       })
-      .catch(console.error);
+      .catch((err) => {
+        console.error(err);
+        setLoadError(err instanceof Error ? err.message : "Failed to load quiz");
+      });
   }, []);
 
+  useEffect(() => {
+    startedAtRef.current = Date.now();
+    loadQuiz();
+  }, [loadQuiz]);
+
   const handleComplete = useCallback(async (data: {
-    answers: { questionId: number; optionId: number; dim: string; score: number }[];
-    gateValue?: string; triggerFired?: string;
+    answers: { questionId: number; optionId: number }[];
   }) => {
     setLoading(true);
     try {
       const matchRes = await fetch("/api/match", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
+        body: JSON.stringify({ answers: data.answers }),
       });
       const matchData: MatchResult = await matchRes.json();
       setResult(matchData);
@@ -67,10 +77,8 @@ export default function TestPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          sessionId, resultCode: matchData.code, similarity: matchData.similarity,
-          userVector: matchData.userVector, top3: matchData.top3, borderType: matchData.borderType,
-          answers: data.answers, gateValue: data.gateValue,
-          triggerFired: data.triggerFired ?? (matchData.special ? matchData.code : null),
+          sessionId,
+          answers: data.answers,
           userAgent: navigator.userAgent,
           screenRes: `${window.screen.width}x${window.screen.height}`,
           language: navigator.language,
@@ -109,6 +117,27 @@ export default function TestPage() {
       }}>
         {showResult && result ? (
           <ResultScreen result={result} stats={stats} onRestart={handleRestart} />
+        ) : loadError && !questions.length ? (
+          <div style={{
+            display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+            minHeight: "100vh", padding: "2rem", textAlign: "center",
+            fontFamily: "'Noto Serif SC', serif",
+          }}>
+            <div style={{ fontSize: "1.2rem", color: "#d4af37", marginBottom: "1rem", fontFamily: "'Cinzel', serif", letterSpacing: "0.2em" }}>审判通道中断</div>
+            <div style={{ fontSize: "0.8rem", color: "#888", marginBottom: "1.5rem" }}>
+              无法连接到审判庭，请稍后再试。
+            </div>
+            <button
+              onClick={() => { setLoadError(null); loadQuiz(); }}
+              style={{
+                fontFamily: "'Cinzel', serif", fontSize: "0.7rem", letterSpacing: "0.2em",
+                color: "#d4af37", background: "none", border: "1px solid rgba(212,175,55,0.3)",
+                padding: "0.5rem 1.5rem", cursor: "pointer", borderRadius: 2,
+              }}
+            >
+              重新尝试
+            </button>
+          </div>
         ) : (
           questions.length > 0 && (
             <TestScreen

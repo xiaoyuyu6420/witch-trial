@@ -2,10 +2,19 @@ import { NextRequest, NextResponse } from "next/server";
 import { match, type MatchInput } from "@/lib/match";
 import { matchRequestSchema } from "@/lib/schemas";
 import { db } from "@/lib/db";
+import { rateLimit } from "@/lib/rate-limit";
 
 export const dynamic = "force-dynamic";
 
 export async function POST(req: NextRequest) {
+  const rl = rateLimit(req, { id: "match", capacity: 20, refillPerSec: 0.5 });
+  if (!rl.ok) {
+    return NextResponse.json(
+      { error: "Rate limited" },
+      { status: 429, headers: { "Retry-After": String(rl.retryAfter) } }
+    );
+  }
+
   let body: unknown;
   try {
     body = await req.json();

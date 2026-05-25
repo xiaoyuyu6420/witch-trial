@@ -8,6 +8,7 @@ services:
     environment:
       - DATABASE_URL=file:./data/witch-trial.db
       - PORT=3001
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD:?ADMIN_PASSWORD env var is required}
 
 volumes:
   db-data:

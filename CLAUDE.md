@@ -89,7 +89,7 @@ Public:
 - `POST /api/results` — persist a `TestRecord` + `Answer[]`, returns participation stats (`rank`, `typeCount`, `typePercentage`). No localized message — the client renders strings from `src/i18n/`.
 - `GET  /api/count` — total participants (real count + hardcoded 2974 offset in route)
 
-Admin (all gated by `src/middleware.ts` checking `x-admin-password` header against `process.env.ADMIN_PASSWORD`):
+Admin (all gated by `src/proxy.ts` checking `x-admin-password` header against `process.env.ADMIN_PASSWORD`):
 - `/api/admin/stats`, `/api/admin/export`, `/api/admin/import`, `/api/admin/template`
 - `/api/admin/questions[/:id]`, `/api/admin/types[/:id]`, `/api/admin/users[/:id]`
 

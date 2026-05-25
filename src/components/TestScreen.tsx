@@ -10,14 +10,14 @@ export interface QuizQuestion {
 }
 
 export interface QuizOption {
-  id: number; label: string; score: number; value: string | null; trigger: string | null;
+  id: number; label: string; score?: number; value?: string | null; trigger?: string | null;
 }
 
 interface TestScreenProps {
   questions: QuizQuestion[];
   onComplete: (result: {
-    answers: { questionId: number; optionId: number; dim: string; score: number }[];
-    gateValue?: string; triggerFired?: string;
+    answers: { questionId: number; optionId: number }[];
+    gateValue?: string;
   }) => void;
   onExit: () => void;
 }
@@ -27,16 +27,15 @@ const ROMAN = ["I", "II", "III", "IV", "V"];
 
 export default function TestScreen({ questions, onComplete, onExit }: TestScreenProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [answers, setAnswers] = useState<{ questionId: number; optionId: number; dim: string; score: number }[]>([]);
+  const [answers, setAnswers] = useState<{ questionId: number; optionId: number }[]>([]);
   const [gateValue, setGateValue] = useState<string | undefined>();
   const [isAnimating, setIsAnimating] = useState(false);
   const { t, locale } = useI18n();
   const [stageFadeOut, setStageFadeOut] = useState(false);
   const stageRef = useRef<HTMLDivElement>(null);
   const pendingRef = useRef<{
-    answers: { questionId: number; optionId: number; dim: string; score: number }[];
+    answers: { questionId: number; optionId: number }[];
     gateValue: string | undefined;
-    triggerFired: string | undefined;
     isLast: boolean;
   } | null>(null);
   const timerRef = useRef<number>(0);
@@ -104,7 +103,7 @@ export default function TestScreen({ questions, onComplete, onExit }: TestScreen
       const progressLine = document.getElementById("progress-line");
       if (progressLine) progressLine.style.width = "100%";
       localStorage.removeItem(STORAGE_KEY);
-      onComplete({ answers: p.answers, gateValue: p.gateValue, triggerFired: p.triggerFired });
+      onComplete({ answers: p.answers, gateValue: p.gateValue });
     } else {
       setAnswers(p.answers);
       setCurrentIndex((i) => i + 1);
@@ -123,12 +122,10 @@ export default function TestScreen({ questions, onComplete, onExit }: TestScreen
     setIsAnimating(true);
     document.body.classList.remove("hovering");
 
-    const answer = { questionId: current.id, optionId: option.id, dim: current.dim, score: option.score };
+    const answer = { questionId: current.id, optionId: option.id };
     const newAnswers = [...answers, answer];
     let newGateValue = gateValue;
     if (current.type === "gate" && option.value) { newGateValue = option.value; setGateValue(option.value); }
-    let triggerFired: string | undefined;
-    if (current.type === "trigger" && option.trigger) triggerFired = option.trigger;
 
     const parent = selectedBlock.parentElement;
     if (parent) {
@@ -140,7 +137,7 @@ export default function TestScreen({ questions, onComplete, onExit }: TestScreen
     if (navigator.vibrate) navigator.vibrate(40);
 
     const isLast = currentIndex >= displayQuestions.length - 1;
-    pendingRef.current = { answers: newAnswers, gateValue: newGateValue, triggerFired, isLast };
+    pendingRef.current = { answers: newAnswers, gateValue: newGateValue, isLast };
 
     // Original timing: 400ms visual feedback, then 300ms fade-out
     fadeTimerRef.current = window.setTimeout(() => {

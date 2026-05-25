@@ -34,7 +34,7 @@ RUN echo '#!/bin/sh' > /app/entrypoint.sh && \
 
 ENV PORT=3001
 ENV HOSTNAME="0.0.0.0"
-ENV DATABASE_URL="file:./prisma/data/witch-trial.db"
+ENV DATABASE_URL="file:./data/witch-trial.db"
 
 EXPOSE 3001
 CMD ["/app/entrypoint.sh"]

@@ -22,13 +22,11 @@ export async function GET() {
       type: q.type,
       meta: q.meta || "",
       translations: q.translations,
-      options: q.options.map((o) => ({
-        id: o.id,
-        label: o.label,
-        score: o.score ?? 0,
-        value: o.value ?? null,
-        trigger: o.trigger ?? null,
-      })),
+      options: q.options.map((o) => (
+        q.type === "gate"
+          ? { id: o.id, label: o.label, value: o.value ?? null }
+          : { id: o.id, label: o.label }
+      )),
     })),
   });
 }

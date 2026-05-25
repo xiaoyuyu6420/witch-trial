@@ -4,6 +4,12 @@ import { PERSONALITY_TYPES, QUESTIONS } from "../src/data/quiz-content";
 const prisma = new PrismaClient();
 
 async function main() {
+  const existingQuestions = await prisma.question.count();
+  if (existingQuestions > 0) {
+    console.log(`Seed skipped: ${existingQuestions} questions already exist in DB`);
+    return;
+  }
+
   console.log("Seeding personality types...");
   for (const t of PERSONALITY_TYPES) {
     await prisma.personalityType.upsert({
