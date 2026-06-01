@@ -275,6 +275,7 @@
       align-self: flex-start;
       padding: 1rem;
       margin-left: -1rem;
+      cursor: pointer !important;  /* 确保磁吸按钮区域显示 pointer 光标 */
     }
 
     .cta-btn {
@@ -291,6 +292,7 @@
       font-size: 1.1rem;
       letter-spacing: 0.3em;
       text-shadow: 0 0 10px rgba(255, 255, 255, 0.2);
+      cursor: pointer !important;  /* 确保按钮显示 pointer 光标 */
       overflow: hidden;
       transition: color 0.4s, letter-spacing 0.4s cubic-bezier(0.76, 0, 0.24, 1), border-color 0.4s;
     }
@@ -529,7 +531,7 @@
       background: rgba(0,0,0,0.3);
       backdrop-filter: blur(8px);
       color: rgba(255,255,255,0.5);
-      cursor: pointer;
+      cursor: pointer !important;  /* 确保全屏按钮显示 pointer 光标 */
       display: flex;
       align-items: center;
       justify-content: center;
@@ -555,6 +557,13 @@
       justify-content: center;
       padding: 2rem;
       text-align: center;
+      cursor: auto !important;  /* 恢复光标可见 */
+    }
+    .fs-prompt * {
+      cursor: auto !important;  /* 所有子元素也恢复光标 */
+    }
+    .fs-prompt button, .fs-prompt span {
+      cursor: pointer !important;  /* 可点击元素显示 pointer */
     }
     .fs-prompt-icon {
       width: 60px;

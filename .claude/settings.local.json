@@ -11,5 +11,19 @@
       "mcp__playwright__browser_network_requests",
       "mcp__playwright__browser_take_screenshot"
     ]
+  },
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "git diff --quiet 2>/dev/null && git diff --cached --quiet 2>/dev/null || (git add -A && git commit -m 'auto: sync' && git push) 2>/dev/null || true",
+            "timeout": 30,
+            "statusMessage": "Syncing to GitHub..."
+          }
+        ]
+      }
+    ]
   }
 }

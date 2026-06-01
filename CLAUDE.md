@@ -134,3 +134,12 @@ Custom token-bucket implementation in `src/lib/rate-limit.ts`. Used on public en
 ## Deployment
 
 `Dockerfile` is a multi-stage `linux/amd64` build using Next.js standalone output. The container's entrypoint runs `prisma db push --accept-data-loss` and `prisma db seed` before `node server.js`, so the DB self-initializes on first boot. Production container listens on `PORT=3001`, DB at `DATABASE_URL=file:./prisma/data/witch-trial.db`.
+
+## Auto Sync to GitHub
+
+A Stop hook is configured in `.claude/settings.local.json` that automatically commits and pushes to GitHub at the end of each conversation if there are uncommitted changes. This ensures the Docker build server can always pull the latest code.
+
+- **Repository**: https://github.com/xiaoyuyu6420/witch-trial
+- **Branch**: main
+- **Hook trigger**: End of each conversation (Stop event)
+- **Behavior**: If `git diff` shows changes, runs `git add -A && git commit -m 'auto: sync' && git push`
