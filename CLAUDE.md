@@ -11,6 +11,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Common Commands
 
 ```bash
+# Setup (first time only)
+npm install              # Install dependencies
+cp .env.example .env     # Configure environment variables
+npx prisma generate      # Generate Prisma client for your platform
+npx prisma db push       # Initialize dev database
+npx tsx prisma/seed.ts    # Seed questions + personality types
+
 # Development
 npm run dev              # Start dev server on http://localhost:3010 (webpack)
 npm run build            # Production build (webpack, standalone output)
@@ -42,6 +49,15 @@ This project is developed on both Windows and macOS. Two artifacts are platform-
 
 1. **Prisma client** — `node_modules/.prisma/client` is generated for the host platform. If `prisma.question.findMany` throws `Prisma Client could not locate the Query Engine for runtime "windows"` (or darwin), run `npx prisma generate`.
 2. **lightningcss native binary** — Tailwind v4 depends on `lightningcss-<platform>` packages. If pages 500 with `Cannot find module '../lightningcss.win32-x64-msvc.node'`, run `npm install` (the optional platform dep gets fetched).
+
+## Environment Variables
+
+Copy `.env.example` to `.env` before first run. Required:
+- `ADMIN_PASSWORD` — Password for admin dashboard access (sent via `x-admin-password` header)
+- `DATABASE_URL` — SQLite path for dev: `file:./dev.db` (auto-created by Prisma)
+
+Optional:
+- `GA_TRACKING_ID` — Google Analytics tracking ID
 
 ## Architecture
 
@@ -93,6 +109,10 @@ Admin (all gated by `src/proxy.ts` checking `x-admin-password` header against `p
 - `/api/admin/stats`, `/api/admin/export`, `/api/admin/import`, `/api/admin/template`
 - `/api/admin/questions[/:id]`, `/api/admin/types[/:id]`, `/api/admin/users[/:id]`
 
+### Rate Limiting
+
+Custom token-bucket implementation in `src/lib/rate-limit.ts`. Used on public endpoints (`/api/match`, `/api/results`) with per-IP throttling. In-memory buckets, pruned after 1 hour when map exceeds 10k entries.
+
 ### Database (Prisma + SQLite)
 
 5 models in `prisma/schema.prisma`: `Question`, `Option`, `PersonalityType`, `TestRecord`, `Answer`. Note:
@@ -103,6 +123,7 @@ Admin (all gated by `src/proxy.ts` checking `x-admin-password` header against `p
 
 ## Project-Specific Conventions
 
+- **Path alias**: `@/*` maps to `src/*` (configured in `tsconfig.json`). Use `@/lib/match` not `../../lib/match`.
 - **All visible page components are client components** (`"use client"`) — the app is state-driven, not route-driven.
 - **Do not use `next/link` or `next/navigation` for the quiz flow.** Screen transitions are state changes inside one page, animated with Framer Motion `AnimatePresence`.
 - **Tailwind v4 + CSS variables**: theme tokens live as `--wt-*` CSS variables in `src/app/globals.css`; components reference them via `var(--wt-accent)` etc.
