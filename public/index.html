@@ -1447,8 +1447,7 @@
         frame = document.createElement('iframe');
         frame.id = 'test-embed';
         frame.title = '魔女审判答题';
-        frame.setAttribute('allow', 'fullscreen; clipboard-write; web-share');
-        frame.setAttribute('allowfullscreen', 'true');
+        frame.setAttribute('allow', 'fullscreen; clipboard-write');
         frame.addEventListener('load', () => {
           try {
             const path = frame.contentWindow.location.pathname;

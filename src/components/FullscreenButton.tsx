@@ -2,14 +2,33 @@
 
 import { useCallback, useSyncExternalStore } from "react";
 
+function getParentDocument() {
+  try {
+    if (window.parent === window) return null;
+    return window.parent.document;
+  } catch {
+    return null;
+  }
+}
+
 function subscribeFullscreen(onStoreChange: () => void) {
   document.addEventListener("fullscreenchange", onStoreChange);
-  return () => document.removeEventListener("fullscreenchange", onStoreChange);
+  const parentDocument = getParentDocument();
+  if (parentDocument && parentDocument !== document) {
+    parentDocument.addEventListener("fullscreenchange", onStoreChange);
+  }
+  return () => {
+    document.removeEventListener("fullscreenchange", onStoreChange);
+    if (parentDocument && parentDocument !== document) {
+      parentDocument.removeEventListener("fullscreenchange", onStoreChange);
+    }
+  };
 }
 
 function getFullscreenSnapshot() {
-  const supported = !!document.documentElement.requestFullscreen;
-  const active = !!document.fullscreenElement;
+  const parentDocument = getParentDocument();
+  const supported = !!document.documentElement.requestFullscreen || !!parentDocument?.documentElement.requestFullscreen;
+  const active = !!document.fullscreenElement || !!parentDocument?.fullscreenElement;
   return `${supported ? 1 : 0}:${active ? 1 : 0}`;
 }
 
@@ -28,10 +47,14 @@ export default function FullscreenButton() {
   const isFullscreen = activeFlag === "1";
 
   const toggle = useCallback(() => {
-    if (!document.documentElement.requestFullscreen) return;
+    const parentDocument = getParentDocument();
+    if (parentDocument?.fullscreenElement) {
+      parentDocument.exitFullscreen();
+      return;
+    }
     if (document.fullscreenElement) {
       document.exitFullscreen();
-    } else {
+    } else if (document.documentElement.requestFullscreen) {
       document.documentElement.requestFullscreen();
     }
   }, []);
