@@ -1081,38 +1081,19 @@
     // 固定的环中心点（magical girls 那几个字后面）
     let centerX = 0, centerY = 0;
 
-    // 统一的状态：是否应该跟随鼠标
-    let followMouse = false;
-    let cursorVisible = false;
+    // 鼠标活跃追踪：只用 mousemove 时间判断，不依赖 leave/enter 事件
     let lastMoveTime = 0;
-    let leaveTimer = null;
-    const RETURN_DELAY = 800; // 鼠标离开 800ms 后回中
+    const IDLE_TIMEOUT = 1500; // 1.5 秒无移动视为离开
 
     function setCursorVisible(v) {
-      if (cursorVisible === v) return;
-      cursorVisible = v;
       cursorDot.style.opacity = v ? '1' : '0';
       cursorRing.style.opacity = v ? '1' : '0';
-      if (v) {
-        document.documentElement.classList.add('cursor-hidden');
-      }
+      if (v) document.documentElement.classList.add('cursor-hidden');
     }
 
-    function onPointerLeave() {
-      setCursorVisible(false);
-      // 延迟回中，期间如果鼠标回来则取消
-      if (leaveTimer) clearTimeout(leaveTimer);
-      leaveTimer = setTimeout(() => {
-        followMouse = false;
-        leaveTimer = null;
-      }, RETURN_DELAY);
-    }
-
-    function onPointerReturn() {
-      if (leaveTimer) { clearTimeout(leaveTimer); leaveTimer = null; }
-      followMouse = true;
-      if (mouse.hasMoved) setCursorVisible(true);
-    }
+    // 初始隐藏自定义光标
+    cursorDot.style.opacity = '0';
+    cursorRing.style.opacity = '0';
 
     function resize() {
       width  = canvas.width  = window.innerWidth;
@@ -1131,19 +1112,15 @@
       mouse.x = e.clientX;
       mouse.y = e.clientY;
       if (!mouse.hasMoved) mouse.hasMoved = true;
-      onPointerReturn();
+      lastMoveTime = performance.now();
+      setCursorVisible(true);
     });
     window.addEventListener('touchmove', (e) => {
       mouse.x = e.touches[0].clientX;
       mouse.y = e.touches[0].clientY;
       mouse.hasMoved = true;
-      followMouse = true;
+      lastMoveTime = performance.now();
     }, { passive: true });
-
-    window.addEventListener('mouseleave', onPointerLeave);
-    window.addEventListener('mouseenter', onPointerReturn);
-    window.addEventListener('blur', onPointerLeave);
-    window.addEventListener('focus', onPointerReturn);
 
     // Ring band parameters. Visible region spans ≈ [R-2W, R+W] from cursor.
     // R=240, W=200 → visible from 0 to ~440 px; peak ring at 240 px.
@@ -1215,15 +1192,20 @@
       ctx.clearRect(0, 0, width, height);
       ctx.lineCap = 'round';
 
-      // 极简逻辑：鼠标活跃时跟随，否则回到中心点
+      // 判断鼠标是否活跃：1.5 秒内有移动
+      const mouseIdle = (time - lastMoveTime) > IDLE_TIMEOUT;
+
+      // 鼠标闲置时隐藏自定义光标
+      if (mouseIdle && mouse.hasMoved) {
+        setCursorVisible(false);
+      }
+
       let targetX, targetY;
 
-      if (followMouse && mouse.hasMoved) {
-        // 跟随鼠标
+      if (!mouseIdle && mouse.hasMoved) {
         targetX = mouse.x;
         targetY = mouse.y;
       } else {
-        // 缓慢回到中心点
         targetX = centerX;
         targetY = centerY;
       }
@@ -1435,8 +1417,8 @@
       if (contentWrapper) contentWrapper.style.opacity = '0';
       if (bgTextContainer) bgTextContainer.style.opacity = '0';
 
-      // 禁止鼠标追踪，环带停在当前位置
-      followMouse = false;
+      // 禁止鼠标追踪，环带立即开始回中
+      lastMoveTime = 0;
       setCursorVisible(false);
 
       setTimeout(() => {
