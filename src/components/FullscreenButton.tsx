@@ -1,19 +1,31 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useCallback, useSyncExternalStore } from "react";
+
+function subscribeFullscreen(onStoreChange: () => void) {
+  document.addEventListener("fullscreenchange", onStoreChange);
+  return () => document.removeEventListener("fullscreenchange", onStoreChange);
+}
+
+function getFullscreenSnapshot() {
+  const supported = !!document.documentElement.requestFullscreen;
+  const active = !!document.fullscreenElement;
+  return `${supported ? 1 : 0}:${active ? 1 : 0}`;
+}
+
+function getServerSnapshot() {
+  return "0:0";
+}
 
 export default function FullscreenButton() {
-  const [isFullscreen, setIsFullscreen] = useState(false);
-  const [supported] = useState(() => {
-    if (typeof document === "undefined") return false;
-    return !!document.documentElement.requestFullscreen;
-  });
-
-  useEffect(() => {
-    const handler = () => setIsFullscreen(!!document.fullscreenElement);
-    document.addEventListener("fullscreenchange", handler);
-    return () => document.removeEventListener("fullscreenchange", handler);
-  }, []);
+  const fullscreenState = useSyncExternalStore(
+    subscribeFullscreen,
+    getFullscreenSnapshot,
+    getServerSnapshot
+  );
+  const [supportedFlag, activeFlag] = fullscreenState.split(":");
+  const supported = supportedFlag === "1";
+  const isFullscreen = activeFlag === "1";
 
   const toggle = useCallback(() => {
     if (!document.documentElement.requestFullscreen) return;
