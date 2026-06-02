@@ -4,10 +4,12 @@ import { useState, useEffect, useCallback } from "react";
 
 export default function FullscreenButton() {
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [supported, setSupported] = useState(false);
+  const [supported] = useState(() => {
+    if (typeof document === "undefined") return false;
+    return !!document.documentElement.requestFullscreen;
+  });
 
   useEffect(() => {
-    setSupported(!!document.documentElement.requestFullscreen);
     const handler = () => setIsFullscreen(!!document.fullscreenElement);
     document.addEventListener("fullscreenchange", handler);
     return () => document.removeEventListener("fullscreenchange", handler);

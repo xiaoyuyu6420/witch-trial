@@ -20,15 +20,16 @@ const TABS: { key: Tab; label: string }[] = [
 
 export default function AdminPage() {
   const [password, setPassword] = useState("");
-  const [storedPw, setStoredPw] = useState<string | null>(null);
-  const [authed, setAuthed] = useState(false);
+  const [storedPw, setStoredPw] = useState<string | null>(() => {
+    if (typeof window === "undefined") return null;
+    return sessionStorage.getItem("admin-pw");
+  });
+  const [authed, setAuthed] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return !!sessionStorage.getItem("admin-pw");
+  });
   const [authError, setAuthError] = useState("");
   const [tab, setTab] = useState<Tab>("dashboard");
-
-  useEffect(() => {
-    const saved = sessionStorage.getItem("admin-pw");
-    if (saved) { setStoredPw(saved); setAuthed(true); }
-  }, []);
 
   const api = useCallback(async (path: string, opts?: RequestInit) => {
     const pw = storedPw || password;
@@ -120,7 +121,11 @@ function UsersTab({ api }: { api: (path: string, opts?: RequestInit) => Promise<
     } catch { } finally { setLoading(false); }
   }, [api, page, search, typeFilter]);
 
-  useEffect(() => { fetchUsers(); }, [fetchUsers]);
+  useEffect(() => {
+    queueMicrotask(() => {
+      void fetchUsers();
+    });
+  }, [fetchUsers]);
 
   const openDetail = async (id: number) => {
     try {
@@ -317,7 +322,11 @@ function QuestionsTab({ api }: { api: (path: string, opts?: RequestInit) => Prom
     } catch { } finally { setLoading(false); }
   }, [api]);
 
-  useEffect(() => { fetchQ(); }, [fetchQ]);
+  useEffect(() => {
+    queueMicrotask(() => {
+      void fetchQ();
+    });
+  }, [fetchQ]);
 
   const startEdit = (q: Rec) => {
     setEditing(q.id as number);
@@ -495,7 +504,11 @@ function TypesTab({ api }: { api: (path: string, opts?: RequestInit) => Promise<
     } catch { } finally { setLoading(false); }
   }, [api]);
 
-  useEffect(() => { fetchT(); }, [fetchT]);
+  useEffect(() => {
+    queueMicrotask(() => {
+      void fetchT();
+    });
+  }, [fetchT]);
 
   const startEdit = (t: Rec) => {
     setEditing(t.id as number);

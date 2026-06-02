@@ -13,7 +13,7 @@ test.describe("Homepage Screenshot Tests", () => {
       await page.setViewportSize({ width: viewport.width, height: viewport.height });
       console.log(`[TEST] Testing ${viewport.name} (${viewport.width}x${viewport.height})`);
 
-      const response = await page.goto("http://localhost:3001", {
+      const response = await page.goto("/", {
         waitUntil: "networkidle",
         timeout: 30000,
       });
@@ -24,11 +24,11 @@ test.describe("Homepage Screenshot Tests", () => {
 
       // Check critical elements exist
       const hasCanvas = await page.locator("canvas").count() > 0;
-      const hasBadge = await page.locator(".hero-badge").isVisible().catch(() => false);
-      const hasSubtitle = await page.locator(".hero-subtitle").isVisible().catch(() => false);
-      const hasStartButton = await page.locator(".art-btn-enter").isVisible().catch(() => false);
+      const hasTitle = await page.locator(".hero__title").isVisible().catch(() => false);
+      const hasTagline = await page.locator(".hero__tagline").first().isVisible().catch(() => false);
+      const hasStartButton = await page.locator(".hero__cta").isVisible().catch(() => false);
 
-      console.log(`[${viewport.name}] Canvas: ${hasCanvas}, Badge: ${hasBadge}, Subtitle: ${hasSubtitle}, StartButton: ${hasStartButton}`);
+      console.log(`[${viewport.name}] Canvas: ${hasCanvas}, Title: ${hasTitle}, Tagline: ${hasTagline}, StartButton: ${hasStartButton}`);
 
       // Full page screenshot
       await page.screenshot({
@@ -41,7 +41,7 @@ test.describe("Homepage Screenshot Tests", () => {
 
   test("capture homepage elements detail", async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 720 });
-    await page.goto("http://localhost:3001", { waitUntil: "networkidle", timeout: 30000 });
+    await page.goto("/", { waitUntil: "networkidle", timeout: 30000 });
     await page.waitForTimeout(5000);
 
     // Capture welcome canvas area
@@ -51,53 +51,39 @@ test.describe("Homepage Screenshot Tests", () => {
       console.log("[SCREENSHOT] Saved: test-results/welcome-canvas.png");
     }
 
-    // Capture hero badge
-    const badge = page.locator(".hero-badge");
-    if (await badge.isVisible()) {
-      await badge.screenshot({ path: "test-results/hero-badge.png" });
-      console.log("[SCREENSHOT] Saved: test-results/hero-badge.png");
+    // Capture hero title
+    const title = page.locator(".hero__title");
+    if (await title.isVisible()) {
+      await title.screenshot({ path: "test-results/hero-title.png" });
+      console.log("[SCREENSHOT] Saved: test-results/hero-title.png");
     }
 
-    // Capture hero subtitle
-    const subtitle = page.locator(".hero-subtitle");
-    if (await subtitle.isVisible()) {
-      await subtitle.screenshot({ path: "test-results/hero-subtitle.png" });
-      console.log("[SCREENSHOT] Saved: test-results/hero-subtitle.png");
+    // Capture hero tagline
+    const tagline = page.locator(".hero__taglines");
+    if (await tagline.isVisible()) {
+      await tagline.screenshot({ path: "test-results/hero-taglines.png" });
+      console.log("[SCREENSHOT] Saved: test-results/hero-taglines.png");
     }
 
     // Capture lang selector
-    const lang = page.locator(".hero-lang");
+    const lang = page.locator(".lang-switcher");
     if (await lang.isVisible()) {
-      await lang.screenshot({ path: "test-results/hero-lang.png" });
-      console.log("[SCREENSHOT] Saved: test-results/hero-lang.png");
+      await lang.screenshot({ path: "test-results/lang-switcher.png" });
+      console.log("[SCREENSHOT] Saved: test-results/lang-switcher.png");
     }
 
     // Capture start button
-    const startBtn = page.locator(".art-btn-enter");
+    const startBtn = page.locator(".hero__cta");
     if (await startBtn.isVisible()) {
       await startBtn.screenshot({ path: "test-results/start-button.png" });
       console.log("[SCREENSHOT] Saved: test-results/start-button.png");
     }
 
-    // Capture hint text
-    const hint = page.locator(".art-btn-hint");
-    if (await hint.isVisible()) {
-      await hint.screenshot({ path: "test-results/start-hint.png" });
-      console.log("[SCREENSHOT] Saved: test-results/start-hint.png");
-    }
-
-    // Capture hero desc block
-    const desc = page.locator(".hero-desc-block");
-    if (await desc.isVisible()) {
-      await desc.screenshot({ path: "test-results/hero-desc.png" });
-      console.log("[SCREENSHOT] Saved: test-results/hero-desc.png");
-    }
-
     // Capture count text
-    const count = page.locator(".hero-count");
+    const count = page.locator(".hero__stats");
     if (await count.isVisible()) {
-      await count.screenshot({ path: "test-results/hero-count.png" });
-      console.log("[SCREENSHOT] Saved: test-results/hero-count.png");
+      await count.screenshot({ path: "test-results/hero-stats.png" });
+      console.log("[SCREENSHOT] Saved: test-results/hero-stats.png");
     }
 
     // Capture particle canvas content
@@ -110,18 +96,17 @@ test.describe("Homepage Screenshot Tests", () => {
 
   test("check welcome screen layout issues", async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 720 });
-    await page.goto("http://localhost:3001", { waitUntil: "networkidle", timeout: 30000 });
+    await page.goto("/", { waitUntil: "networkidle", timeout: 30000 });
     await page.waitForTimeout(5000);
 
     // Check element positions and styles
     const elements = [
-      ".hero-badge",
-      ".hero-subtitle",
-      ".hero-desc-block",
-      ".hero-count",
-      ".hero-lang",
-      ".art-btn-enter",
-      ".art-btn-hint",
+      ".hero__overline",
+      ".hero__title",
+      ".hero__taglines",
+      ".hero__stats",
+      ".lang-switcher",
+      ".hero__cta",
     ];
 
     const report: Record<string, unknown> = {};

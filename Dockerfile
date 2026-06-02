@@ -26,9 +26,11 @@ COPY --from=builder /app/node_modules ./node_modules
 
 # Entrypoint script: init DB then start server
 RUN echo '#!/bin/sh' > /app/entrypoint.sh && \
+    echo 'set -e' >> /app/entrypoint.sh && \
     echo 'mkdir -p /app/data' >> /app/entrypoint.sh && \
-    echo 'npx prisma db push --accept-data-loss 2>/dev/null || true' >> /app/entrypoint.sh && \
-    echo 'npx prisma db seed 2>/dev/null || true' >> /app/entrypoint.sh && \
+    echo 'if [ ! -f /app/data/witch-trial.db ]; then INIT_DB=1; fi' >> /app/entrypoint.sh && \
+    echo 'npx prisma db push' >> /app/entrypoint.sh && \
+    echo 'if [ "$INIT_DB" = "1" ]; then npx prisma db seed; fi' >> /app/entrypoint.sh && \
     echo 'exec node server.js' >> /app/entrypoint.sh && \
     chmod +x /app/entrypoint.sh
 

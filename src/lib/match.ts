@@ -72,6 +72,20 @@ export interface MatchResult {
   translations?: string;
 }
 
+function resolveSpecialCode(trigger: string, candidates: string[]): string | undefined {
+  if (candidates.includes(trigger)) return trigger;
+
+  const match = /^SPECIAL_([A-Z]|\d+)$/i.exec(trigger);
+  if (!match) return undefined;
+
+  const token = match[1].toUpperCase();
+  const index = /^\d+$/.test(token)
+    ? Number(token) - 1
+    : token.charCodeAt(0) - "A".charCodeAt(0);
+
+  return index >= 0 ? candidates[index] : undefined;
+}
+
 export function match(
   input: MatchInput,
   types: {
@@ -105,8 +119,9 @@ export function match(
       endure: specialTypes.filter((_, i) => i % 2 === 1).map((t) => t.code),
     };
     const candidates = gateToSpecial[input.gateValue] ?? specialTypes.map((t) => t.code);
-    if (candidates.includes(input.triggerFired)) {
-      const t = allTypes.find((p) => p.code === input.triggerFired)!;
+    const specialCode = resolveSpecialCode(input.triggerFired, candidates);
+    if (specialCode) {
+      const t = allTypes.find((p) => p.code === specialCode)!;
       // Compute user vector for special trigger too
       let specialUserVec = "";
       {

@@ -13,7 +13,7 @@ test.describe("Witch Trial Frontend", () => {
   });
 
   test("homepage loads without errors", async ({ page }) => {
-    const response = await page.goto("http://localhost:3001", { waitUntil: "networkidle", timeout: 30000 });
+    const response = await page.goto("/", { waitUntil: "networkidle", timeout: 30000 });
     console.log(`[HTTP STATUS] ${response?.status()}`);
     expect(response?.status()).toBe(200);
 
@@ -24,40 +24,40 @@ test.describe("Witch Trial Frontend", () => {
       if (msg.type() === "error") consoleErrors.push(msg.text());
     });
 
-    const particleCanvas = page.locator("canvas").first();
+    const particleCanvas = page.locator("#abyss-canvas");
     await expect(particleCanvas).toBeVisible({ timeout: 10000 });
     console.log("[PARTICLE TITLE CANVAS VISIBLE] OK");
 
-    const startButton = page.locator(".art-btn-enter");
+    const startButton = page.locator(".hero__cta");
     await expect(startButton).toBeVisible({ timeout: 10000 });
     console.log("[START BUTTON VISIBLE] OK");
   });
 
   test("welcome screen shows correct content", async ({ page }) => {
-    await page.goto("http://localhost:3001", { waitUntil: "networkidle", timeout: 30000 });
+    await page.goto("/", { waitUntil: "networkidle", timeout: 30000 });
     await page.waitForTimeout(3000);
 
-    const badge = page.locator(".hero-badge");
-    if (await badge.isVisible()) {
-      console.log(`[BADGE] ${await badge.textContent()}`);
+    const title = page.locator(".hero__title");
+    if (await title.isVisible()) {
+      console.log(`[TITLE] ${await title.textContent()}`);
     }
 
-    const subtitle = page.locator(".hero-subtitle");
-    if (await subtitle.isVisible()) {
-      console.log(`[SUBTITLE] ${await subtitle.textContent()}`);
+    const tagline = page.locator(".hero__tagline").first();
+    if (await tagline.isVisible()) {
+      console.log(`[TAGLINE] ${await tagline.textContent()}`);
     }
 
-    const langButtons = page.locator(".hero-lang button");
+    const langButtons = page.locator(".lang-switcher button");
     const count = await langButtons.count();
     console.log(`[LANG BUTTONS] ${count}`);
     expect(count).toBeGreaterThan(0);
   });
 
   test("click start and complete first question", async ({ page }) => {
-    await page.goto("http://localhost:3001", { waitUntil: "networkidle", timeout: 30000 });
+    await page.goto("/", { waitUntil: "networkidle", timeout: 30000 });
     await page.waitForTimeout(3000);
 
-    const startButton = page.locator(".art-btn-enter");
+    const startButton = page.locator(".hero__cta");
     await expect(startButton).toBeVisible({ timeout: 10000 });
     await startButton.click();
 
@@ -78,12 +78,12 @@ test.describe("Witch Trial Frontend", () => {
   });
 
   test("API endpoints return valid data", async ({ page }) => {
-    const quizRes = await page.request.get("http://localhost:3001/api/quiz");
+    const quizRes = await page.request.get("/api/quiz");
     console.log(`[API /quiz STATUS] ${quizRes.status()}`);
     const quizData = await quizRes.json();
     console.log(`[API /quiz] questions: ${quizData.questions?.length}, types: ${quizData.types?.length}`);
 
-    const countRes = await page.request.get("http://localhost:3001/api/count");
+    const countRes = await page.request.get("/api/count");
     console.log(`[API /count STATUS] ${countRes.status()}`);
     const countData = await countRes.json();
     console.log(`[API /count] total: ${countData.total}`);

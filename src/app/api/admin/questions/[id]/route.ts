@@ -58,13 +58,13 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       if (o.id) {
         await db.option.upsert({
           where: { id: o.id },
-          update: { label: o.label, score: o.score, value: o.value ?? undefined, trigger: o.trigger ?? undefined },
+          update: { label: o.label, score: o.score, value: o.value ?? null, trigger: o.trigger ?? null },
           create: {
             questionId: question.id,
             label: o.label,
             score: o.score,
-            value: o.value ?? undefined,
-            trigger: o.trigger ?? undefined,
+            value: o.value ?? null,
+            trigger: o.trigger ?? null,
           },
         });
       } else {
@@ -73,8 +73,8 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
             questionId: question.id,
             label: o.label,
             score: o.score,
-            value: o.value ?? undefined,
-            trigger: o.trigger ?? undefined,
+            value: o.value ?? null,
+            trigger: o.trigger ?? null,
           },
         });
         optionIds.add(created.id);

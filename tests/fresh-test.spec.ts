@@ -9,7 +9,7 @@ test("clear storage and test fresh", async ({ page }) => {
   });
 
   // 先访问页面
-  await page.goto("http://localhost:3010/test", { waitUntil: "networkidle" });
+  await page.goto("/test", { waitUntil: "networkidle" });
 
   // 清除 localStorage
   await page.evaluate(() => {

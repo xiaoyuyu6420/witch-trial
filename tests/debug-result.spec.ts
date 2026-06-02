@@ -9,7 +9,7 @@ test("debug result page transition", async ({ page }) => {
   });
 
   // 直接访问测试页面
-  await page.goto("http://localhost:3010/test", { waitUntil: "networkidle" });
+  await page.goto("/test", { waitUntil: "networkidle" });
 
   // 等待第一个问题
   await expect(page.locator(".q-text")).toBeVisible({ timeout: 10000 });

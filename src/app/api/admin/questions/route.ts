@@ -33,49 +33,65 @@ export async function PUT(req: NextRequest) {
     }
     const questions = parsed.data;
 
-    await db.$transaction(
-      questions.map((q) =>
-        db.question.upsert({
-          where: { id: q.id ?? -1 },
-          update: { dim: q.dim, text: q.text, order: q.order, type: q.type, meta: q.meta },
-          create: {
-            dim: q.dim,
-            text: q.text,
-            order: q.order,
-            type: q.type,
-            meta: q.meta,
-            options: {
-              create: q.options.map((o) => ({
+    await db.$transaction(async (tx) => {
+      for (const q of questions) {
+        const question = q.id
+          ? await tx.question.update({
+              where: { id: q.id },
+              data: {
+                dim: q.dim,
+                text: q.text,
+                order: q.order,
+                type: q.type,
+                meta: q.meta,
+                ...(q.translations !== undefined ? { translations: q.translations } : {}),
+              },
+            })
+          : await tx.question.create({
+              data: {
+                dim: q.dim,
+                text: q.text,
+                order: q.order,
+                type: q.type,
+                meta: q.meta,
+                ...(q.translations !== undefined ? { translations: q.translations } : {}),
+              },
+            });
+
+        const optionIds = new Set<number>();
+        for (const o of q.options) {
+          if (o.id) {
+            const updated = await tx.option.upsert({
+              where: { id: o.id },
+              update: { label: o.label, score: o.score, value: o.value ?? null, trigger: o.trigger ?? null },
+              create: {
+                questionId: question.id,
                 label: o.label,
                 score: o.score,
-                value: o.value ?? undefined,
-                trigger: o.trigger ?? undefined,
-              })),
-            },
-          },
-        })
-      )
-    );
-
-    // Upsert options for existing questions
-    for (const q of questions) {
-      if (!q.id) continue;
-      for (const o of q.options) {
-        if (o.id) {
-          await db.option.upsert({
-            where: { id: o.id },
-            update: { label: o.label, score: o.score, value: o.value ?? undefined, trigger: o.trigger ?? undefined },
-            create: {
-              questionId: q.id,
-              label: o.label,
-              score: o.score,
-              value: o.value ?? undefined,
-              trigger: o.trigger ?? undefined,
-            },
-          });
+                value: o.value ?? null,
+                trigger: o.trigger ?? null,
+              },
+            });
+            optionIds.add(updated.id);
+          } else {
+            const created = await tx.option.create({
+              data: {
+                questionId: question.id,
+                label: o.label,
+                score: o.score,
+                value: o.value ?? null,
+                trigger: o.trigger ?? null,
+              },
+            });
+            optionIds.add(created.id);
+          }
         }
+
+        await tx.option.deleteMany({
+          where: { questionId: question.id, id: { notIn: [...optionIds] } },
+        });
       }
-    }
+    });
 
     return NextResponse.json({ ok: true });
   } catch (e) {

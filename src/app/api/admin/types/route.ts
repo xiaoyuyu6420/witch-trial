@@ -43,6 +43,7 @@ export async function PUT(req: NextRequest) {
             desc: t.desc,
             keywords: t.keywords ?? null,
             ...(t.special !== undefined ? { special: t.special } : {}),
+            ...(t.translations !== undefined ? { translations: t.translations } : {}),
           },
           create: {
             code: t.code,
@@ -54,6 +55,7 @@ export async function PUT(req: NextRequest) {
             desc: t.desc,
             keywords: t.keywords ?? null,
             special: t.special ?? false,
+            ...(t.translations !== undefined ? { translations: t.translations } : {}),
           },
         })
       )

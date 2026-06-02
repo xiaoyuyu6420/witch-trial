@@ -1,5 +1,4 @@
 import { PrismaClient } from "@prisma/client";
-import zhCN from "../src/i18n/zh-CN";
 import zhTW from "../src/i18n/zh-TW";
 import en from "../src/i18n/en";
 import ja from "../src/i18n/ja";

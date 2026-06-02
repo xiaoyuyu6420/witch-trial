@@ -25,10 +25,41 @@ interface TestScreenProps {
 const STORAGE_KEY = "witch-trial-progress";
 const ROMAN = ["I", "II", "III", "IV", "V"];
 
+function readSavedProgress(): {
+  currentIndex: number;
+  answers: { questionId: number; optionId: number }[];
+  gateValue: string | undefined;
+} {
+  if (typeof window === "undefined") {
+    return { currentIndex: 0, answers: [], gateValue: undefined };
+  }
+
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (!saved) return { currentIndex: 0, answers: [], gateValue: undefined };
+    const data = JSON.parse(saved) as {
+      currentIndex?: unknown;
+      answers?: unknown;
+      gateValue?: unknown;
+    };
+    if (!Array.isArray(data.answers) || typeof data.currentIndex !== "number" || data.currentIndex <= 0) {
+      return { currentIndex: 0, answers: [], gateValue: undefined };
+    }
+    return {
+      currentIndex: data.currentIndex,
+      answers: data.answers as { questionId: number; optionId: number }[],
+      gateValue: typeof data.gateValue === "string" ? data.gateValue : undefined,
+    };
+  } catch {
+    return { currentIndex: 0, answers: [], gateValue: undefined };
+  }
+}
+
 export default function TestScreen({ questions, onComplete, onExit }: TestScreenProps) {
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [answers, setAnswers] = useState<{ questionId: number; optionId: number }[]>([]);
-  const [gateValue, setGateValue] = useState<string | undefined>();
+  const [progressState] = useState(readSavedProgress);
+  const [currentIndex, setCurrentIndex] = useState(progressState.currentIndex);
+  const [answers, setAnswers] = useState<{ questionId: number; optionId: number }[]>(progressState.answers);
+  const [gateValue, setGateValue] = useState<string | undefined>(progressState.gateValue);
   const [isAnimating, setIsAnimating] = useState(false);
   const { t, locale } = useI18n();
   const [stageFadeOut, setStageFadeOut] = useState(false);
@@ -40,20 +71,6 @@ export default function TestScreen({ questions, onComplete, onExit }: TestScreen
   } | null>(null);
   const timerRef = useRef<number>(0);
   const fadeTimerRef = useRef<number>(0);
-
-  useEffect(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) {
-        const data = JSON.parse(saved);
-        if (data.answers && data.currentIndex > 0) {
-          setAnswers(data.answers);
-          setCurrentIndex(data.currentIndex);
-          if (data.gateValue) setGateValue(data.gateValue);
-        }
-      }
-    } catch { /* ignore */ }
-  }, []);
 
   useEffect(() => {
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ currentIndex, answers, gateValue })); } catch { /* ignore */ }
@@ -146,7 +163,7 @@ export default function TestScreen({ questions, onComplete, onExit }: TestScreen
     timerRef.current = window.setTimeout(() => {
       flushPending();
     }, 700);
-  }, [current, answers, gateValue, currentIndex, displayQuestions.length, onComplete, isAnimating, flushPending]);
+  }, [current, answers, gateValue, currentIndex, displayQuestions.length, isAnimating, flushPending]);
 
   // Keyboard support
   useEffect(() => {

@@ -13,7 +13,7 @@ test.describe("Quiz Flow Test", () => {
     });
 
     console.log("[TEST] Navigating to /test directly...");
-    await page.goto("http://localhost:3010/test", {
+    await page.goto("/test", {
       waitUntil: "networkidle",
       timeout: 30000
     });

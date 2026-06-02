@@ -35,7 +35,7 @@ async function main() {
 
   for (let i = 0; i < QUESTIONS.length; i++) {
     const q = QUESTIONS[i];
-    const question = await prisma.question.create({
+    await prisma.question.create({
       data: {
         dim: q.dim, text: q.text, order: i + 1, type: q.type, meta: q.meta ?? "",
         options: {

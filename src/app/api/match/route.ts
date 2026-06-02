@@ -39,6 +39,7 @@ export async function POST(req: NextRequest) {
     include: { question: { select: { id: true, dim: true, type: true } } },
   });
   const optionMap = new Map(options.map((o) => [o.id, o]));
+  const validAnswers: typeof answers = [];
 
   const dimScores: Record<string, number> = {};
   let gateValue: MatchInput["gateValue"] | undefined;
@@ -47,6 +48,7 @@ export async function POST(req: NextRequest) {
   for (const a of answers) {
     const opt = optionMap.get(a.optionId);
     if (!opt || opt.questionId !== a.questionId) continue;
+    validAnswers.push(a);
 
     const qType = opt.question.type;
     if (qType === "gate") {
@@ -64,6 +66,13 @@ export async function POST(req: NextRequest) {
     const dim = opt.question.dim;
     if (!dim || dim === "GATE" || dim === "TRIGGER") continue;
     dimScores[dim] = (dimScores[dim] ?? 0) + (opt.score ?? 0);
+  }
+
+  if (validAnswers.length !== answers.length) {
+    return NextResponse.json(
+      { error: "Invalid answers" },
+      { status: 400 }
+    );
   }
 
   // If the client claimed a gate/trigger but the DB didn't confirm it, drop it silently.

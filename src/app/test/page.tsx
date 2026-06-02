@@ -24,6 +24,8 @@ export default function TestPage() {
   const [loading, setLoading] = useState(false);
   const [showResult, setShowResult] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [lastCompletion, setLastCompletion] = useState<{ answers: { questionId: number; optionId: number }[] } | null>(null);
   const { t } = useI18n();
   const startedAtRef = useRef<number>(0);
 
@@ -61,12 +63,18 @@ export default function TestPage() {
     answers: { questionId: number; optionId: number }[];
   }) => {
     setLoading(true);
+    setSubmitError(null);
+    setLastCompletion(data);
     try {
       const matchRes = await fetch("/api/match", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ answers: data.answers }),
       });
+      if (!matchRes.ok) {
+        const errorData = await matchRes.json().catch(() => null);
+        throw new Error(errorData?.error || `Match failed: HTTP ${matchRes.status}`);
+      }
       const matchData: MatchResult = await matchRes.json();
       setResult(matchData);
       trackEvent("quiz_complete", { result_code: matchData.code, similarity: matchData.similarity, special: matchData.special ? 1 : 0 });
@@ -88,11 +96,19 @@ export default function TestPage() {
           duration,
         }),
       });
+      if (!statsRes.ok) {
+        const errorData = await statsRes.json().catch(() => null);
+        throw new Error(errorData?.error || `Results failed: HTTP ${statsRes.status}`);
+      }
       const statsData = await statsRes.json();
       setStats({ totalParticipants: statsData.totalParticipants, typePercentage: statsData.typePercentage, typeCount: statsData.typeCount });
+      setLastCompletion(null);
       setShowResult(true);
     } catch (err) {
       console.error(err);
+      setResult(null);
+      setStats(null);
+      setSubmitError(err instanceof Error ? err.message : "Failed to submit quiz");
     } finally {
       setLoading(false);
     }
@@ -136,6 +152,30 @@ export default function TestPage() {
               }}
             >
               重新尝试
+            </button>
+          </div>
+        ) : submitError ? (
+          <div style={{
+            display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+            minHeight: "100vh", padding: "2rem", textAlign: "center",
+            fontFamily: "'Noto Serif SC', serif",
+          }}>
+            <div style={{ fontSize: "1.2rem", color: "#d4af37", marginBottom: "1rem", fontFamily: "'Cinzel', serif", letterSpacing: "0.2em" }}>审判提交中断</div>
+            <div style={{ fontSize: "0.8rem", color: "#888", marginBottom: "1.5rem", maxWidth: 420, lineHeight: 1.7 }}>
+              结果未能安全写入，请稍后重新提交。{submitError}
+            </div>
+            <button
+              onClick={() => {
+                if (lastCompletion) void handleComplete(lastCompletion);
+                else setSubmitError(null);
+              }}
+              style={{
+                fontFamily: "'Cinzel', serif", fontSize: "0.7rem", letterSpacing: "0.2em",
+                color: "#d4af37", background: "none", border: "1px solid rgba(212,175,55,0.3)",
+                padding: "0.5rem 1.5rem", cursor: "pointer", borderRadius: 2,
+              }}
+            >
+              重新提交
             </button>
           </div>
         ) : (

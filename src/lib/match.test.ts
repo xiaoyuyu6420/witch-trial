@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { parseVector, formatVector, scoreToTier, weightedManhattan, similarity, match } from "./match";
-import { DIMENSIONS, ALGO_CONFIG } from "@/data/quiz-content";
+import { DIMENSIONS } from "@/data/quiz-content";
 
 describe("parseVector", () => {
   it("parses LHH-LLM-HHH-LLL correctly", () => {
@@ -125,6 +125,19 @@ describe("match", () => {
     expect(result.special).toBe(true);
     expect(result.code).toBe("YUKI");
     expect(result.similarity).toBe(100);
+  });
+
+  it("resolves seeded SPECIAL_A trigger aliases through the gate branch", () => {
+    const dimScores: Record<string, number> = {};
+    DIMENSIONS.forEach((d) => { dimScores[d.code] = 3; });
+
+    const destroyResult = match({ dimScores, gateValue: "destroy", triggerFired: "SPECIAL_A" }, makeTypes());
+    const endureResult = match({ dimScores, gateValue: "endure", triggerFired: "SPECIAL_A" }, makeTypes());
+
+    expect(destroyResult.special).toBe(true);
+    expect(destroyResult.code).toBe("YUKI");
+    expect(endureResult.special).toBe(true);
+    expect(endureResult.code).toBe("ETL");
   });
 
   it("does not trigger special without gateValue", () => {
