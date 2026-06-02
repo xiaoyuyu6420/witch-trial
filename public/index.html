@@ -420,6 +420,22 @@
       transition: width 0.1s;
     }
 
+    #test-embed {
+      position: fixed;
+      inset: 0;
+      width: 100vw;
+      height: 100vh;
+      height: 100dvh;
+      border: 0;
+      display: none;
+      background: #030303;
+      z-index: 30000;
+    }
+
+    body.test-embedded #test-embed {
+      display: block;
+    }
+
     /* =========================================
        8. MOBILE RESPONSIVE ADAPTATION
        ========================================= */
@@ -1408,9 +1424,62 @@
     /* =========================================================
        7. ACTION
        ========================================================= */
+    function isFullscreenActive() {
+      return !!(document.fullscreenElement || document.webkitFullscreenElement);
+    }
+
+    function restoreLandingFromEmbeddedTest() {
+      const frame = document.getElementById('test-embed');
+      if (frame) frame.remove();
+      document.body.classList.remove('test-embedded');
+      document.body.style.background = '';
+      document.body.style.overflow = '';
+
+      const contentWrapper = document.querySelector('.content-wrapper');
+      const bgTextContainer = document.querySelector('.bg-text-container');
+      if (contentWrapper) contentWrapper.style.opacity = '';
+      if (bgTextContainer) bgTextContainer.style.opacity = '';
+    }
+
+    function enterEmbeddedTest() {
+      let frame = document.getElementById('test-embed');
+      if (!frame) {
+        frame = document.createElement('iframe');
+        frame.id = 'test-embed';
+        frame.title = '魔女审判答题';
+        frame.setAttribute('allow', 'fullscreen; clipboard-write; web-share');
+        frame.setAttribute('allowfullscreen', 'true');
+        frame.addEventListener('load', () => {
+          try {
+            const path = frame.contentWindow.location.pathname;
+            if (path === '/' || path === '/index.html') {
+              restoreLandingFromEmbeddedTest();
+              history.replaceState(null, '', '/');
+            }
+          } catch {
+            // Ignore cross-document access errors.
+          }
+        });
+        document.body.appendChild(frame);
+      }
+
+      document.body.classList.add('test-embedded');
+      frame.src = '/test';
+      if (location.pathname !== '/test') {
+        history.pushState({ embeddedTest: true }, '', '/test');
+      }
+    }
+
+    window.addEventListener('popstate', () => {
+      if (document.body.classList.contains('test-embedded') && location.pathname !== '/test') {
+        restoreLandingFromEmbeddedTest();
+      }
+    });
+
     function initiateDive() {
       const contentWrapper = document.querySelector('.content-wrapper');
       const bgTextContainer = document.querySelector('.bg-text-container');
+      const shouldEmbedTest = isFullscreenActive();
 
       document.body.style.transition = 'background 0.3s';
       document.body.style.background = '#b80a1f';
@@ -1427,7 +1496,11 @@
 
         // 缩短黑屏过渡时间到 600ms，让导航更响应
         setTimeout(() => {
-          window.location.href = '/test';
+          if (shouldEmbedTest) {
+            enterEmbeddedTest();
+          } else {
+            window.location.href = '/test';
+          }
         }, 600);
       }, 150);
     }

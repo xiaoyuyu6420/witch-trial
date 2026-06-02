@@ -85,6 +85,30 @@ test.describe("Witch Trial Loading Test", () => {
     await page.screenshot({ path: "test-results/test-page.png", fullPage: false });
   });
 
+  test("fullscreen start keeps immersive mode while opening test", async ({ page }) => {
+    await page.goto("/", {
+      waitUntil: "domcontentloaded",
+      timeout: 30000
+    });
+
+    const loader = page.locator("#loader");
+    await expect(loader).toHaveCSS("transform", /matrix\(1, 0, 0, 1, 0, -[0-9]{2,}/, { timeout: 20000 });
+    await page.waitForTimeout(3000);
+
+    await page.evaluate(async () => {
+      await document.documentElement.requestFullscreen();
+    });
+    await expect.poll(() => page.evaluate(() => !!document.fullscreenElement)).toBe(true);
+
+    const startBtn = page.locator(".hero__cta");
+    await expect(startBtn).toBeVisible({ timeout: 5000 });
+    await startBtn.click();
+
+    await page.waitForURL("**/test", { timeout: 15000 });
+    await expect(page.frameLocator("#test-embed").locator(".q-text")).toBeVisible({ timeout: 15000 });
+    await expect.poll(() => page.evaluate(() => !!document.fullscreenElement)).toBe(true);
+  });
+
   test("language switcher should work", async ({ page }) => {
     console.log("[TEST] Testing language switcher...");
 
