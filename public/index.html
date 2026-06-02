@@ -66,7 +66,8 @@
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
     /* Custom cursor only when JS executes; falls back to system cursor otherwise. Touch devices override below. */
-    html.js-ready * { cursor: none !important; }
+    /* 初始时系统光标可见，鼠标第一次移动后 JS 添加 cursor-hidden 类来隐藏系统光标 */
+    html.js-ready.cursor-hidden * { cursor: none !important; }
 
     body {
       background-color: var(--bg);
@@ -275,7 +276,6 @@
       align-self: flex-start;
       padding: 1rem;
       margin-left: -1rem;
-      cursor: pointer !important;  /* 确保磁吸按钮区域显示 pointer 光标 */
     }
 
     .cta-btn {
@@ -292,7 +292,6 @@
       font-size: 1.1rem;
       letter-spacing: 0.3em;
       text-shadow: 0 0 10px rgba(255, 255, 255, 0.2);
-      cursor: pointer !important;  /* 确保按钮显示 pointer 光标 */
       overflow: hidden;
       transition: color 0.4s, letter-spacing 0.4s cubic-bezier(0.76, 0, 0.24, 1), border-color 0.4s;
     }
@@ -453,7 +452,7 @@
       }
 
       /* 手机端恢复原生系统光标，避免点击偏移和视觉累赘 */
-      html.js-ready * { cursor: auto !important; }
+      html.js-ready.cursor-hidden * { cursor: auto !important; }
       #cursor-dot, #cursor-ring { display: none !important; }
 
       /* HUD框架压缩与重排 */
@@ -531,7 +530,7 @@
       background: rgba(0,0,0,0.3);
       backdrop-filter: blur(8px);
       color: rgba(255,255,255,0.5);
-      cursor: pointer !important;  /* 确保全屏按钮显示 pointer 光标 */
+      cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -557,13 +556,6 @@
       justify-content: center;
       padding: 2rem;
       text-align: center;
-      cursor: auto !important;  /* 恢复光标可见 */
-    }
-    .fs-prompt * {
-      cursor: auto !important;  /* 所有子元素也恢复光标 */
-    }
-    .fs-prompt button, .fs-prompt span {
-      cursor: pointer !important;  /* 可点击元素显示 pointer */
     }
     .fs-prompt-icon {
       width: 60px;
@@ -1274,6 +1266,26 @@
     const cursorRing = document.getElementById('cursor-ring');
     let cx = window.innerWidth / 2, cy = window.innerHeight / 2;
     let rx = cx, ry = cy;
+
+    // 初始隐藏自定义光标，等鼠标移动后再显示
+    cursorDot.style.opacity = '0';
+    cursorRing.style.opacity = '0';
+
+    function showCustomCursor() {
+      cursorDot.style.opacity = '1';
+      cursorRing.style.opacity = '1';
+    }
+
+    // 鼠标第一次移动时，显示自定义光标并隐藏系统光标
+    let cursorShown = false;
+    window.addEventListener('mousemove', function onFirstMove() {
+      if (!cursorShown) {
+        showCustomCursor();
+        document.documentElement.classList.add('cursor-hidden');
+        cursorShown = true;
+        window.removeEventListener('mousemove', onFirstMove);
+      }
+    }, { once: false });
 
     function animateCursor() {
       if (window.innerWidth > 768) { // 仅在非手机端更新光标
