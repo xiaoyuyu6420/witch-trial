@@ -1074,13 +1074,45 @@
     let width, height;
     const mouse = { x: 0, y: 0, hasMoved: false };
     const ringCenter = { x: 0, y: 0 };
-    let pointerActive = true;
     let idleT = 0;
     const cursorDot = document.getElementById('cursor-dot');
     const cursorRing = document.getElementById('cursor-ring');
 
     // 固定的环中心点（magical girls 那几个字后面）
     let centerX = 0, centerY = 0;
+
+    // 统一的状态：是否应该跟随鼠标
+    let followMouse = false;
+    let cursorVisible = false;
+    let lastMoveTime = 0;
+    let leaveTimer = null;
+    const RETURN_DELAY = 800; // 鼠标离开 800ms 后回中
+
+    function setCursorVisible(v) {
+      if (cursorVisible === v) return;
+      cursorVisible = v;
+      cursorDot.style.opacity = v ? '1' : '0';
+      cursorRing.style.opacity = v ? '1' : '0';
+      if (v) {
+        document.documentElement.classList.add('cursor-hidden');
+      }
+    }
+
+    function onPointerLeave() {
+      setCursorVisible(false);
+      // 延迟回中，期间如果鼠标回来则取消
+      if (leaveTimer) clearTimeout(leaveTimer);
+      leaveTimer = setTimeout(() => {
+        followMouse = false;
+        leaveTimer = null;
+      }, RETURN_DELAY);
+    }
+
+    function onPointerReturn() {
+      if (leaveTimer) { clearTimeout(leaveTimer); leaveTimer = null; }
+      followMouse = true;
+      if (mouse.hasMoved) setCursorVisible(true);
+    }
 
     function resize() {
       width  = canvas.width  = window.innerWidth;
@@ -1089,65 +1121,29 @@
       if (ringCenter.x === 0 && ringCenter.y === 0) {
         ringCenter.x = mouse.x; ringCenter.y = mouse.y;
       }
-      // 中心点位置：根据设备类型调整
       centerX = width * 0.5;
-      // 手机版（宽度 < 768px）中心点在屏幕中央，桌面版在"magical girls"位置
       centerY = width < 768 ? height * 0.47 : height * 0.34;
       seedDashes();
     }
     window.addEventListener('resize', resize);
+
     window.addEventListener('mousemove', (e) => {
       mouse.x = e.clientX;
       mouse.y = e.clientY;
-      if (e.clientY >= 0) {
-        mouse.hasMoved = true;
-        cancelReturnToCenter();
-      } else {
-        startReturnToCenter();
-      }
+      if (!mouse.hasMoved) mouse.hasMoved = true;
+      onPointerReturn();
     });
-    window.addEventListener('touchmove', (e) => { mouse.x = e.touches[0].clientX; mouse.y = e.touches[0].clientY; mouse.hasMoved = true; }, { passive: true });
+    window.addEventListener('touchmove', (e) => {
+      mouse.x = e.touches[0].clientX;
+      mouse.y = e.touches[0].clientY;
+      mouse.hasMoved = true;
+      followMouse = true;
+    }, { passive: true });
 
-    // 鼠标离开后延迟 800ms 再回中，避免边缘快速进出导致弹跳
-    let leaveTimer = null;
-    function startReturnToCenter() {
-      if (leaveTimer) return;
-      leaveTimer = setTimeout(() => {
-        pointerActive = false;
-        leaveTimer = null;
-      }, 800);
-    }
-    function cancelReturnToCenter() {
-      if (leaveTimer) { clearTimeout(leaveTimer); leaveTimer = null; }
-      pointerActive = true;
-    }
-
-    window.addEventListener('mouseleave', () => {
-      // 立即隐藏自定义光标
-      cursorDot.style.opacity = '0';
-      cursorRing.style.opacity = '0';
-      // 延迟回中
-      startReturnToCenter();
-    });
-    window.addEventListener('mouseenter', () => {
-      cancelReturnToCenter();
-      if (cursorShown) {
-        cursorDot.style.opacity = '1';
-        cursorRing.style.opacity = '1';
-      }
-    });
-    window.addEventListener('blur', () => {
-      cursorDot.style.opacity = '0';
-      cursorRing.style.opacity = '0';
-      startReturnToCenter();
-    });
-    window.addEventListener('focus', () => {
-      cancelReturnToCenter();
-      if (cursorShown) {
-        cursorDot.style.opacity = '1';
-        cursorRing.style.opacity = '1';
-      }
-    });
+    window.addEventListener('mouseleave', onPointerLeave);
+    window.addEventListener('mouseenter', onPointerReturn);
+    window.addEventListener('blur', onPointerLeave);
+    window.addEventListener('focus', onPointerReturn);
 
     // Ring band parameters. Visible region spans ≈ [R-2W, R+W] from cursor.
     // R=240, W=200 → visible from 0 to ~440 px; peak ring at 240 px.
@@ -1222,7 +1218,7 @@
       // 极简逻辑：鼠标活跃时跟随，否则回到中心点
       let targetX, targetY;
 
-      if (pointerActive && mouse.hasMoved) {
+      if (followMouse && mouse.hasMoved) {
         // 跟随鼠标
         targetX = mouse.x;
         targetY = mouse.y;
@@ -1298,28 +1294,12 @@
     /* =========================================================
        3. CUSTOM CURSOR LOGIC
        ========================================================= */
-    let cx = window.innerWidth / 2, cy = window.innerHeight / 2;
-    let rx = cx, ry = cy;
-
-    // 初始隐藏自定义光标，等鼠标移动后再显示
+    // 初始隐藏自定义光标（setCursorVisible 会在第一次 mousemove 时显示）
     cursorDot.style.opacity = '0';
     cursorRing.style.opacity = '0';
 
-    function showCustomCursor() {
-      cursorDot.style.opacity = '1';
-      cursorRing.style.opacity = '1';
-    }
-
-    // 鼠标第一次移动时，显示自定义光标并隐藏系统光标
-    let cursorShown = false;
-    window.addEventListener('mousemove', function onFirstMove() {
-      if (!cursorShown) {
-        showCustomCursor();
-        document.documentElement.classList.add('cursor-hidden');
-        cursorShown = true;
-        window.removeEventListener('mousemove', onFirstMove);
-      }
-    }, { once: false });
+    let cx = window.innerWidth / 2, cy = window.innerHeight / 2;
+    let rx = cx, ry = cy;
 
     function animateCursor() {
       if (window.innerWidth > 768) { // 仅在非手机端更新光标
@@ -1456,7 +1436,8 @@
       if (bgTextContainer) bgTextContainer.style.opacity = '0';
 
       // 禁止鼠标追踪，环带停在当前位置
-      pointerActive = false;
+      followMouse = false;
+      setCursorVisible(false);
 
       setTimeout(() => {
         document.body.style.background = '#000';
