@@ -1483,11 +1483,11 @@
     document.addEventListener('fullscreenchange', updateFullscreenIcon);
     document.addEventListener('webkitfullscreenchange', updateFullscreenIcon);
 
-    // Show fullscreen prompt on mobile devices
+    // Show fullscreen prompt on all devices that aren't already fullscreen
     document.addEventListener('DOMContentLoaded', () => {
-      const isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
       const alreadyPrompted = localStorage.getItem('witch-trial-fs-prompted');
-      if (isMobile && !alreadyPrompted) {
+      const isFullscreen = !!(document.fullscreenElement || document.webkitFullscreenElement);
+      if (!alreadyPrompted && !isFullscreen) {
         setTimeout(() => {
           document.getElementById('fs-prompt').style.display = 'flex';
         }, 2000);
