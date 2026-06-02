@@ -1099,36 +1099,50 @@
     window.addEventListener('mousemove', (e) => {
       mouse.x = e.clientX;
       mouse.y = e.clientY;
-      // 仅当鼠标在有效范围内（y >= 0）时标记为活跃
       if (e.clientY >= 0) {
         mouse.hasMoved = true;
-        pointerActive = true;
+        cancelReturnToCenter();
       } else {
-        pointerActive = false;
+        startReturnToCenter();
       }
     });
     window.addEventListener('touchmove', (e) => { mouse.x = e.touches[0].clientX; mouse.y = e.touches[0].clientY; mouse.hasMoved = true; }, { passive: true });
 
-    // 简化的事件监听：控制 pointerActive 标志和自定义光标显隐
+    // 鼠标离开后延迟 800ms 再回中，避免边缘快速进出导致弹跳
+    let leaveTimer = null;
+    function startReturnToCenter() {
+      if (leaveTimer) return;
+      leaveTimer = setTimeout(() => {
+        pointerActive = false;
+        leaveTimer = null;
+      }, 800);
+    }
+    function cancelReturnToCenter() {
+      if (leaveTimer) { clearTimeout(leaveTimer); leaveTimer = null; }
+      pointerActive = true;
+    }
+
     window.addEventListener('mouseleave', () => {
-      pointerActive = false;
+      // 立即隐藏自定义光标
       cursorDot.style.opacity = '0';
       cursorRing.style.opacity = '0';
+      // 延迟回中
+      startReturnToCenter();
     });
     window.addEventListener('mouseenter', () => {
-      pointerActive = true;
+      cancelReturnToCenter();
       if (cursorShown) {
         cursorDot.style.opacity = '1';
         cursorRing.style.opacity = '1';
       }
     });
     window.addEventListener('blur', () => {
-      pointerActive = false;
       cursorDot.style.opacity = '0';
       cursorRing.style.opacity = '0';
+      startReturnToCenter();
     });
     window.addEventListener('focus', () => {
-      pointerActive = true;
+      cancelReturnToCenter();
       if (cursorShown) {
         cursorDot.style.opacity = '1';
         cursorRing.style.opacity = '1';
