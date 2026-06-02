@@ -394,8 +394,8 @@ body.hovering #cursor-ring { width: 70px; height: 70px; border-color: var(--c-go
 }
 .result-layout {
   display: flex; width: 100%; max-width: 1300px; padding: 5vw; align-items: center;
-  opacity: 0; transform: translateY(40px);
-  transition: opacity 1.5s var(--ease-out-expo) 0.6s, transform 1.5s var(--ease-out-expo) 0.6s;
+  opacity: 1; transform: translateY(0);
+  transition: transform 1.2s var(--ease-out-expo);
 }
 body.revealed .result-layout { opacity: 1; transform: translateY(0); }
 @media (max-width: 768px) { .result-layout { flex-direction: column; text-align: center; } }

@@ -39,12 +39,15 @@ const loaders: Record<Locale, () => Promise<any>> = {
 };
 
 export function I18nProvider({ children }: { children: ReactNode }) {
-  const [locale, setLocaleState] = useState<Locale>(() => {
-    if (typeof window === "undefined") return "zh-CN";
-    return detectLocale();
-  });
+  const [locale, setLocaleState] = useState<Locale>("zh-CN");
   const [translations, setTranslations] = useState<Record<string, unknown>>({});
   const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    queueMicrotask(() => {
+      setLocaleState(detectLocale());
+    });
+  }, []);
 
   useEffect(() => {
     loaders[locale]().then((t) => {

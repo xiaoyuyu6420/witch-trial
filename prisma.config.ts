@@ -1,7 +1,12 @@
 import "dotenv/config";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { defineConfig } from "prisma/config";
 
-process.env["DATABASE_URL"] ??= "file:./dev.db";
+const projectRoot = path.dirname(fileURLToPath(import.meta.url));
+const defaultDatabaseUrl = `file:${path.resolve(projectRoot, "dev.db").replaceAll("\\", "/")}`;
+
+process.env["DATABASE_URL"] ??= defaultDatabaseUrl;
 
 export default defineConfig({
   schema: "prisma/schema.prisma",
@@ -9,6 +14,6 @@ export default defineConfig({
     path: "prisma/migrations",
   },
   datasource: {
-    url: process.env["DATABASE_URL"] ?? "file:./dev.db",
+    url: process.env["DATABASE_URL"] ?? defaultDatabaseUrl,
   },
 });

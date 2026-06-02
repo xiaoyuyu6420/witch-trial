@@ -56,13 +56,14 @@ function readSavedProgress(): {
 }
 
 export default function TestScreen({ questions, onComplete, onExit }: TestScreenProps) {
-  const [progressState] = useState(readSavedProgress);
-  const [currentIndex, setCurrentIndex] = useState(progressState.currentIndex);
-  const [answers, setAnswers] = useState<{ questionId: number; optionId: number }[]>(progressState.answers);
-  const [gateValue, setGateValue] = useState<string | undefined>(progressState.gateValue);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [answers, setAnswers] = useState<{ questionId: number; optionId: number }[]>([]);
+  const [gateValue, setGateValue] = useState<string | undefined>();
   const [isAnimating, setIsAnimating] = useState(false);
   const { t, locale } = useI18n();
   const [stageFadeOut, setStageFadeOut] = useState(false);
+  const [showKeyboardHint, setShowKeyboardHint] = useState(false);
+  const [isCompleted, setIsCompleted] = useState(false);
   const stageRef = useRef<HTMLDivElement>(null);
   const pendingRef = useRef<{
     answers: { questionId: number; optionId: number }[];
@@ -71,6 +72,16 @@ export default function TestScreen({ questions, onComplete, onExit }: TestScreen
   } | null>(null);
   const timerRef = useRef<number>(0);
   const fadeTimerRef = useRef<number>(0);
+
+  useEffect(() => {
+    queueMicrotask(() => {
+      const saved = readSavedProgress();
+      setAnswers(saved.answers);
+      setCurrentIndex(saved.currentIndex);
+      setGateValue(saved.gateValue);
+      setShowKeyboardHint(!("ontouchstart" in window));
+    });
+  }, []);
 
   useEffect(() => {
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ currentIndex, answers, gateValue })); } catch { /* ignore */ }
@@ -120,6 +131,7 @@ export default function TestScreen({ questions, onComplete, onExit }: TestScreen
       const progressLine = document.getElementById("progress-line");
       if (progressLine) progressLine.style.width = "100%";
       localStorage.removeItem(STORAGE_KEY);
+      setIsCompleted(true);
       onComplete({ answers: p.answers, gateValue: p.gateValue });
     } else {
       setAnswers(p.answers);
@@ -190,7 +202,7 @@ export default function TestScreen({ questions, onComplete, onExit }: TestScreen
     if (el) el.style.width = `${progress}%`;
   }, [progress]);
 
-  if (!current) return null;
+  if (isCompleted || !current) return null;
 
   const isGateOrTrigger = current.type === "gate" || current.type === "trigger";
   const questionLabelId = `q-text-${current.id}`;
@@ -231,7 +243,7 @@ export default function TestScreen({ questions, onComplete, onExit }: TestScreen
               {isGateOrTrigger && <span className="gate-badge">{current.type === "gate" ? t("test.gateBadge") : t("test.triggerBadge")}</span>}
               {isGateOrTrigger ? "" : `${current.meta || "审判"} \u00B7 ${String(currentIndex + 1).padStart(2, "0")} / ${String(displayQuestions.length).padStart(2, "0")}`}
             </span>
-            <span className="q-hint">{typeof window !== "undefined" && !("ontouchstart" in window) ? t("test.keyHint") : ""}</span>
+            <span className="q-hint">{showKeyboardHint ? t("test.keyHint") : ""}</span>
           </div>
           <div className="q-text" id={questionLabelId}>{current.text}</div>
         </div>

@@ -57,19 +57,19 @@ Copy `.env.example` to `.env` before first run. Required:
 - `DATABASE_URL` — SQLite path for dev: `file:./dev.db` (auto-created by Prisma)
 
 Optional:
-- `GA_TRACKING_ID` — Google Analytics tracking ID
+- `NEXT_PUBLIC_GA_ID` — Google Analytics tracking ID (e.g. `G-XXXXXXXXXX`)
 
 ## Architecture
 
 ### Quiz Flow
 
 ```
-/ (iframe → public/index.html)  ──"接受审判"──▶  /test  ──answers──▶  result
-                                                  ▲                      │
-                                                  └────"REBIRTH"────────┘  (full reload to /)
+/ (rewrite → public/index.html)  ──"接受审判"──▶  /test  ──answers──▶  result
+                                                    ▲                      │
+                                                    └────"REBIRTH"────────┘  (full reload to /)
 ```
 
-- `src/app/page.tsx` is just an `<iframe src="/index.html">`. The actual welcome screen is the static `public/index.html`, which deep-links to `/test` to start the quiz.
+- `next.config.ts` rewrites `/` to `/index.html` — the welcome screen is the static `public/index.html`, which deep-links to `/test` to start the quiz. There is no `src/app/page.tsx`.
 - `src/app/test/page.tsx` is the quiz orchestrator — it fetches `/api/quiz`, runs `<TestScreen>`, then `<ResultScreen>`. The two screens are siblings on the same page; the transition is a state flip, not a route change.
 - Progress is persisted to `localStorage` under `witch-trial-progress` (resume support).
 - "REBIRTH" / EXIT both `window.location.href = "/"` — full reloads, not SPA navigation.
@@ -105,7 +105,7 @@ Public:
 - `POST /api/results` — persist a `TestRecord` + `Answer[]`, returns participation stats (`rank`, `typeCount`, `typePercentage`). No localized message — the client renders strings from `src/i18n/`.
 - `GET  /api/count` — total participants (real count + hardcoded 2974 offset in route)
 
-Admin (all gated by `src/proxy.ts` checking `x-admin-password` header against `process.env.ADMIN_PASSWORD`):
+Admin (dual auth: `src/proxy.ts` middleware + `checkAdminAuth()` from `src/lib/admin-auth.ts` in each handler, both check `x-admin-password` header against `process.env.ADMIN_PASSWORD`):
 - `/api/admin/stats`, `/api/admin/export`, `/api/admin/import`, `/api/admin/template`
 - `/api/admin/questions[/:id]`, `/api/admin/types[/:id]`, `/api/admin/users[/:id]`
 
@@ -127,7 +127,7 @@ Custom token-bucket implementation in `src/lib/rate-limit.ts`. Used on public en
 - **All visible page components are client components** (`"use client"`) — the app is state-driven, not route-driven.
 - **Do not use `next/link` or `next/navigation` for the quiz flow.** Screen transitions are state changes inside one page, animated with Framer Motion `AnimatePresence`.
 - **Tailwind v4 + CSS variables**: theme tokens live as `--wt-*` CSS variables in `src/app/globals.css`; components reference them via `var(--wt-accent)` etc.
-- **No `next/font`**: fonts (Noto Serif SC, Cinzel) are loaded via `<link>` / `@import` per the handoff doc.
+- **Fonts**: loaded via `next/font/google` in `src/app/layout.tsx` (Noto Serif SC → `--font-noto-serif`, Cinzel → `--font-cinzel`).
 - **Vector strings**: 12-dim vectors are written as `"LHH-LLM-HHH-LLL"` (groups of 3 separated by `-`, characters `L/M/H/X` = `0/1/2/3`). `parseVector`/`formatVector` in `src/lib/match.ts` handle the conversion.
 - **Dev server port is 3010**, not the Next.js default 3000.
 
