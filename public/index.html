@@ -1076,6 +1076,8 @@
     const ringCenter = { x: 0, y: 0 };
     let pointerActive = true;
     let idleT = 0;
+    const cursorDot = document.getElementById('cursor-dot');
+    const cursorRing = document.getElementById('cursor-ring');
 
     // 固定的环中心点（magical girls 那几个字后面）
     let centerX = 0, centerY = 0;
@@ -1107,11 +1109,31 @@
     });
     window.addEventListener('touchmove', (e) => { mouse.x = e.touches[0].clientX; mouse.y = e.touches[0].clientY; mouse.hasMoved = true; }, { passive: true });
 
-    // 简化的事件监听：只控制 pointerActive 标志
-    window.addEventListener('mouseleave', () => { pointerActive = false; });
-    window.addEventListener('mouseenter', () => { pointerActive = true; });
-    window.addEventListener('blur', () => { pointerActive = false; });
-    window.addEventListener('focus', () => { pointerActive = true; });
+    // 简化的事件监听：控制 pointerActive 标志和自定义光标显隐
+    window.addEventListener('mouseleave', () => {
+      pointerActive = false;
+      cursorDot.style.opacity = '0';
+      cursorRing.style.opacity = '0';
+    });
+    window.addEventListener('mouseenter', () => {
+      pointerActive = true;
+      if (cursorShown) {
+        cursorDot.style.opacity = '1';
+        cursorRing.style.opacity = '1';
+      }
+    });
+    window.addEventListener('blur', () => {
+      pointerActive = false;
+      cursorDot.style.opacity = '0';
+      cursorRing.style.opacity = '0';
+    });
+    window.addEventListener('focus', () => {
+      pointerActive = true;
+      if (cursorShown) {
+        cursorDot.style.opacity = '1';
+        cursorRing.style.opacity = '1';
+      }
+    });
 
     // Ring band parameters. Visible region spans ≈ [R-2W, R+W] from cursor.
     // R=240, W=200 → visible from 0 to ~440 px; peak ring at 240 px.
@@ -1262,8 +1284,6 @@
     /* =========================================================
        3. CUSTOM CURSOR LOGIC
        ========================================================= */
-    const cursorDot = document.getElementById('cursor-dot');
-    const cursorRing = document.getElementById('cursor-ring');
     let cx = window.innerWidth / 2, cy = window.innerHeight / 2;
     let rx = cx, ry = cy;
 
