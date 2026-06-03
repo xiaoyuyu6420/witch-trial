@@ -70,6 +70,7 @@ export default function TestScreen({ questions, onComplete, onExit }: TestScreen
     gateValue: string | undefined;
     isLast: boolean;
   } | null>(null);
+  const touchFeedbackRef = useRef(false);
   const timerRef = useRef<number>(0);
   const fadeTimerRef = useRef<number>(0);
 
@@ -79,13 +80,22 @@ export default function TestScreen({ questions, onComplete, onExit }: TestScreen
       setAnswers(saved.answers);
       setCurrentIndex(saved.currentIndex);
       setGateValue(saved.gateValue);
-      setShowKeyboardHint(!("ontouchstart" in window));
+      const isTouchLike = window.matchMedia("(pointer: coarse)").matches || "ontouchstart" in window;
+      touchFeedbackRef.current = isTouchLike;
+      setShowKeyboardHint(!isTouchLike);
     });
   }, []);
 
   useEffect(() => {
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ currentIndex, answers, gateValue })); } catch { /* ignore */ }
   }, [currentIndex, answers, gateValue]);
+
+  useEffect(() => {
+    return () => {
+      clearTimeout(timerRef.current);
+      clearTimeout(fadeTimerRef.current);
+    };
+  }, []);
 
   const displayQuestions = useMemo(() => {
     if (locale === "zh-CN") {
@@ -163,18 +173,20 @@ export default function TestScreen({ questions, onComplete, onExit }: TestScreen
       selectedBlock.classList.add("is-selected");
       allBlocks.forEach((b) => { if (b !== selectedBlock) b.classList.add("is-dimmed"); });
     }
-    if (navigator.vibrate) navigator.vibrate(40);
+    const isTouchFeedback = touchFeedbackRef.current;
+    if (navigator.vibrate) navigator.vibrate(isTouchFeedback ? 12 : 40);
 
     const isLast = currentIndex >= displayQuestions.length - 1;
     pendingRef.current = { answers: newAnswers, gateValue: newGateValue, isLast };
 
-    // Original timing: 400ms visual feedback, then 300ms fade-out
+    const feedbackDelay = isTouchFeedback ? 120 : 400;
+    const totalDelay = isTouchFeedback ? 280 : 700;
     fadeTimerRef.current = window.setTimeout(() => {
       setStageFadeOut(true);
-    }, 400);
+    }, feedbackDelay);
     timerRef.current = window.setTimeout(() => {
       flushPending();
-    }, 700);
+    }, totalDelay);
   }, [current, answers, gateValue, currentIndex, displayQuestions.length, isAnimating, flushPending]);
 
   // Keyboard support
@@ -190,7 +202,7 @@ export default function TestScreen({ questions, onComplete, onExit }: TestScreen
         return;
       }
       const blocks = stageRef.current?.querySelectorAll(".opt-block");
-      if (blocks && blocks[idx]) handleSelect(blocks[idx] as HTMLElement, current.options[idx]);
+      if (blocks && blocks[idx] && current.options[idx]) handleSelect(blocks[idx] as HTMLElement, current.options[idx]);
     };
     window.addEventListener("keydown", handleKey);
     return () => window.removeEventListener("keydown", handleKey);

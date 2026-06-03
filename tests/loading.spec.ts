@@ -52,7 +52,7 @@ test.describe("Witch Trial Loading Test", () => {
     console.log("[SCREENSHOT] Saved to test-results/homepage-loaded.png");
   });
 
-  test("click start button should navigate to /test", async ({ page }) => {
+  test("click start button should open embedded /test", async ({ page }) => {
     console.log("[TEST] Navigating to homepage...");
 
     await page.goto("/", {
@@ -79,7 +79,8 @@ test.describe("Witch Trial Loading Test", () => {
     console.log(`[NAVIGATION] Current URL: ${page.url()}`);
 
     expect(page.url()).toContain("/test");
-    console.log("[TEST] Successfully navigated to /test page");
+    await expect(page.frameLocator("#test-embed").locator(".q-text")).toBeVisible({ timeout: 15000 });
+    console.log("[TEST] Successfully opened embedded /test page");
 
     // 截图
     await page.screenshot({ path: "test-results/test-page.png", fullPage: false });

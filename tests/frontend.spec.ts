@@ -63,7 +63,8 @@ test.describe("Witch Trial Frontend", () => {
 
     await page.waitForTimeout(1500);
 
-    const optBlocks = page.locator(".opt-block");
+    const testFrame = page.frameLocator("#test-embed");
+    const optBlocks = testFrame.locator(".opt-block");
     await expect(optBlocks.first()).toBeVisible({ timeout: 10000 });
     const optCount = await optBlocks.count();
     console.log(`[OPTIONS COUNT] ${optCount}`);
@@ -71,7 +72,7 @@ test.describe("Witch Trial Frontend", () => {
     await optBlocks.first().click();
     await page.waitForTimeout(1500);
 
-    const questionText = page.locator(".q-text");
+    const questionText = testFrame.locator(".q-text");
     if (await questionText.isVisible()) {
       console.log(`[QUESTION TEXT] ${(await questionText.textContent())?.slice(0, 50)}...`);
     }

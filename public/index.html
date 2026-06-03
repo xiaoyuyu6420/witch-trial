@@ -1462,13 +1462,13 @@
       document.body.style.background = '';
       document.body.style.overflow = '';
 
-      const contentWrapper = document.querySelector('.content-wrapper');
+      const hero = document.querySelector('.hero');
       const bgTextContainer = document.querySelector('.bg-text-container');
-      if (contentWrapper) contentWrapper.style.opacity = '';
+      if (hero) hero.style.opacity = '';
       if (bgTextContainer) bgTextContainer.style.opacity = '';
     }
 
-    function enterEmbeddedTest() {
+    function ensureEmbeddedTestFrame() {
       let frame = document.getElementById('test-embed');
       if (!frame) {
         frame = document.createElement('iframe');
@@ -1489,8 +1489,15 @@
         document.body.appendChild(frame);
       }
 
+      if (frame.getAttribute('src') !== '/test') {
+        frame.src = '/test';
+      }
+      return frame;
+    }
+
+    function enterEmbeddedTest() {
+      ensureEmbeddedTestFrame();
       document.body.classList.add('test-embedded');
-      frame.src = '/test';
       if (location.pathname !== '/test') {
         history.pushState({ embeddedTest: true }, '', '/test');
       }
@@ -1503,13 +1510,14 @@
     });
 
     function initiateDive() {
-      const contentWrapper = document.querySelector('.content-wrapper');
+      const hero = document.querySelector('.hero');
       const bgTextContainer = document.querySelector('.bg-text-container');
-      const shouldEmbedTest = isFullscreenActive();
+
+      ensureEmbeddedTestFrame();
 
       document.body.style.transition = 'background 0.3s';
       document.body.style.background = '#b80a1f';
-      if (contentWrapper) contentWrapper.style.opacity = '0';
+      if (hero) hero.style.opacity = '0';
       if (bgTextContainer) bgTextContainer.style.opacity = '0';
 
       // 禁止鼠标追踪，环带立即开始回中
@@ -1522,11 +1530,7 @@
 
         // 缩短黑屏过渡时间到 600ms，让导航更响应
         setTimeout(() => {
-          if (shouldEmbedTest) {
-            enterEmbeddedTest();
-          } else {
-            window.location.href = '/test';
-          }
+          enterEmbeddedTest();
         }, 600);
       }, 150);
     }
