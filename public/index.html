@@ -536,7 +536,7 @@
     /* ===== FULLSCREEN BUTTON ===== */
     .fs-btn {
       position: fixed;
-      top: max(1rem, env(safe-area-inset-top, 1rem));
+      bottom: max(1rem, env(safe-area-inset-bottom, 1rem));
       right: max(1rem, env(safe-area-inset-right, 1rem));
       z-index: 100;
       width: 36px;
@@ -1424,8 +1424,35 @@
     /* =========================================================
        7. ACTION
        ========================================================= */
+    function getFullscreenElement() {
+      return document.fullscreenElement ||
+        document.webkitFullscreenElement ||
+        document.webkitCurrentFullScreenElement ||
+        document.mozFullScreenElement ||
+        document.msFullscreenElement ||
+        (document.webkitIsFullScreen ? document.documentElement : null);
+    }
+
     function isFullscreenActive() {
-      return !!(document.fullscreenElement || document.webkitFullscreenElement);
+      return !!getFullscreenElement();
+    }
+
+    function requestElementFullscreen(el) {
+      const request = el.requestFullscreen ||
+        el.webkitRequestFullscreen ||
+        el.webkitRequestFullScreen ||
+        el.mozRequestFullScreen ||
+        el.msRequestFullscreen;
+      if (request) request.call(el);
+    }
+
+    function exitDocumentFullscreen() {
+      const exit = document.exitFullscreen ||
+        document.webkitExitFullscreen ||
+        document.webkitCancelFullScreen ||
+        document.mozCancelFullScreen ||
+        document.msExitFullscreen;
+      if (exit) exit.call(document);
     }
 
     function restoreLandingFromEmbeddedTest() {
@@ -1448,6 +1475,7 @@
         frame.id = 'test-embed';
         frame.title = '魔女审判答题';
         frame.setAttribute('allow', 'fullscreen; clipboard-write');
+        frame.setAttribute('allowfullscreen', '');
         frame.addEventListener('load', () => {
           try {
             const path = frame.contentWindow.location.pathname;
@@ -1520,20 +1548,15 @@
        8. FULLSCREEN FUNCTIONALITY
        ========================================================= */
     function toggleFullscreen() {
-      if (!document.fullscreenElement && !document.webkitFullscreenElement) {
-        const el = document.documentElement;
-        if (el.requestFullscreen) el.requestFullscreen();
-        else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
+      if (!isFullscreenActive()) {
+        requestElementFullscreen(document.documentElement);
       } else {
-        if (document.exitFullscreen) document.exitFullscreen();
-        else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+        exitDocumentFullscreen();
       }
     }
 
     function enterFullscreen() {
-      const el = document.documentElement;
-      if (el.requestFullscreen) el.requestFullscreen();
-      else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
+      requestElementFullscreen(document.documentElement);
       document.getElementById('fs-prompt').style.display = 'none';
       localStorage.setItem('witch-trial-fs-prompted', 'true');
     }
@@ -1544,18 +1567,20 @@
     }
 
     function updateFullscreenIcon() {
-      const isFS = !!(document.fullscreenElement || document.webkitFullscreenElement);
+      const isFS = isFullscreenActive();
       document.getElementById('fs-icon-enter').style.display = isFS ? 'none' : 'block';
       document.getElementById('fs-icon-exit').style.display = isFS ? 'block' : 'none';
     }
 
     document.addEventListener('fullscreenchange', updateFullscreenIcon);
     document.addEventListener('webkitfullscreenchange', updateFullscreenIcon);
+    document.addEventListener('mozfullscreenchange', updateFullscreenIcon);
+    document.addEventListener('MSFullscreenChange', updateFullscreenIcon);
 
     // Show fullscreen prompt on all devices that aren't already fullscreen
     document.addEventListener('DOMContentLoaded', () => {
       const alreadyPrompted = localStorage.getItem('witch-trial-fs-prompted');
-      const isFullscreen = !!(document.fullscreenElement || document.webkitFullscreenElement);
+      const isFullscreen = isFullscreenActive();
       if (!alreadyPrompted && !isFullscreen) {
         setTimeout(() => {
           document.getElementById('fs-prompt').style.display = 'flex';
