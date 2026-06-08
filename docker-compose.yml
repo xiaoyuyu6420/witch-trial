@@ -1,11 +1,11 @@
 services:
-  witch-trial:
+  magical-girls-witch-trial:
     image: ghcr.io/xiaoyuyu6420/magical-girls-witch-trial:latest
     build:
       context: .
       platforms:
         - linux/amd64
-    container_name: witch-trial
+    container_name: magical-girls-witch-trial
     restart: unless-stopped
     ports:
       - "8091:3001"
@@ -38,7 +38,7 @@ services:
 
   backup:
     image: ghcr.io/xiaoyuyu6420/magical-girls-witch-trial:latest
-    container_name: witch-trial-backup
+    container_name: magical-girls-backup
     restart: unless-stopped
     volumes:
       - ./data:/app/data:ro

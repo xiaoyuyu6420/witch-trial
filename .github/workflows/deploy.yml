@@ -57,7 +57,6 @@ jobs:
     environment: production
     env:
       GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
-      ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
     steps:
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1
@@ -65,22 +64,24 @@ jobs:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SERVER_SSH_KEY }}
-          envs: GHCR_TOKEN,ADMIN_PASSWORD
+          envs: GHCR_TOKEN
           script: |
             mkdir -p /home/magical-girls/data /home/magical-girls/backups
             cd /home/magical-girls
 
-            # Create .env if not exists
-            if [ ! -f .env ]; then
-              echo "ADMIN_PASSWORD=$ADMIN_PASSWORD" > .env
+            # Check .env exists
+            if [ ! -f .env ] || ! grep -q "ADMIN_PASSWORD" .env; then
+              echo "ERROR: Please create .env file with ADMIN_PASSWORD on server first"
+              echo "Run: echo 'ADMIN_PASSWORD=your_password' > /home/magical-girls/.env"
+              exit 1
             fi
 
             # Create docker-compose.yml
             cat > docker-compose.yml << 'COMPOSE_EOF'
             services:
-              witch-trial:
+              magical-girls-witch-trial:
                 image: ghcr.io/xiaoyuyu6420/magical-girls-witch-trial:latest
-                container_name: witch-trial
+                container_name: magical-girls-witch-trial
                 restart: unless-stopped
                 ports:
                   - "8091:3001"
@@ -111,7 +112,7 @@ jobs:
 
               backup:
                 image: ghcr.io/xiaoyuyu6420/magical-girls-witch-trial:latest
-                container_name: witch-trial-backup
+                container_name: magical-girls-backup
                 restart: unless-stopped
                 volumes:
                   - ./data:/app/data:ro
