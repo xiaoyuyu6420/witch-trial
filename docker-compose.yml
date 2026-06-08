@@ -1,14 +1,17 @@
 services:
   witch-trial:
     image: ghcr.io/xiaoyuyu6420/witch-trial:latest
-    build: .
+    build:
+      context: .
+      platforms:
+        - linux/amd64
     container_name: witch-trial
     restart: unless-stopped
     ports:
       - "8091:3001"
     volumes:
-      - db-data:/app/data
-      - backup-data:/backups
+      - ./data:/app/data
+      - ./backups:/backups
     environment:
       - DATABASE_URL=file:./data/witch-trial.db
       - PORT=3001
@@ -38,8 +41,8 @@ services:
     container_name: witch-trial-backup
     restart: unless-stopped
     volumes:
-      - db-data:/app/data:ro
-      - backup-data:/backups
+      - ./data:/app/data:ro
+      - ./backups:/backups
     entrypoint: ["/bin/sh", "-c"]
     command:
       - |
@@ -57,9 +60,3 @@ services:
       options:
         max-size: "5m"
         max-file: "2"
-
-volumes:
-  db-data:
-    driver: local
-  backup-data:
-    driver: local
