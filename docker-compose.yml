@@ -1,14 +1,65 @@
 services:
   witch-trial:
+    image: ghcr.io/xiaoyuyu6420/witch-trial:latest
     build: .
+    container_name: witch-trial
+    restart: unless-stopped
     ports:
-      - "3001:3001"
+      - "8091:3001"
     volumes:
       - db-data:/app/data
+      - backup-data:/backups
     environment:
       - DATABASE_URL=file:./data/witch-trial.db
       - PORT=3001
-      - ADMIN_PASSWORD=${ADMIN_PASSWORD:?ADMIN_PASSWORD env var is required}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD:?Set ADMIN_PASSWORD in .env}
+      - NODE_ENV=production
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:3001/api/count"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: "1.0"
+        reservations:
+          memory: 128M
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  backup:
+    image: ghcr.io/xiaoyuyu6420/witch-trial:latest
+    container_name: witch-trial-backup
+    restart: unless-stopped
+    volumes:
+      - db-data:/app/data:ro
+      - backup-data:/backups
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        echo "Backup service started. Running every 6 hours."
+        while true; do
+          /app/scripts/backup.sh
+          sleep 21600
+        done
+    deploy:
+      resources:
+        limits:
+          memory: 64M
+    logging:
+      driver: json-file
+      options:
+        max-size: "5m"
+        max-file: "2"
 
 volumes:
   db-data:
+    driver: local
+  backup-data:
+    driver: local

@@ -10,21 +10,18 @@ FROM --platform=linux/amd64 node:20-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 
-# Install sqlite first (before any cache issues)
 RUN apk update && apk add --no-cache sqlite
 
-# Copy standalone server
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/prisma.config.ts ./prisma.config.ts
 COPY --from=builder /app/src/data ./src/data
-
-# Copy all node_modules for Prisma CLI to work
 COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/scripts/backup.sh /app/scripts/backup.sh
+RUN chmod +x /app/scripts/backup.sh
 
-# Entrypoint script: init DB then start server
 RUN echo '#!/bin/sh' > /app/entrypoint.sh && \
     echo 'set -e' >> /app/entrypoint.sh && \
     echo 'mkdir -p /app/data' >> /app/entrypoint.sh && \
