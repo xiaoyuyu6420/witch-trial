@@ -65,6 +65,7 @@ jobs:
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SERVER_SSH_KEY }}
           envs: GHCR_TOKEN
+          command_timeout: 30m
           script: |
             mkdir -p /home/magical-girls/data /home/magical-girls/backups
             cd /home/magical-girls
