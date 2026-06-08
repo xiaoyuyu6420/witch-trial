@@ -1,6 +1,6 @@
 services:
   witch-trial:
-    image: ghcr.io/xiaoyuyu6420/witch-trial:latest
+    image: ghcr.io/xiaoyuyu6420/magical-girls-witch-trial:latest
     build:
       context: .
       platforms:
@@ -37,7 +37,7 @@ services:
         max-file: "3"
 
   backup:
-    image: ghcr.io/xiaoyuyu6420/witch-trial:latest
+    image: ghcr.io/xiaoyuyu6420/magical-girls-witch-trial:latest
     container_name: witch-trial-backup
     restart: unless-stopped
     volumes:
