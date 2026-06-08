@@ -64,6 +64,10 @@ jobs:
           key: ${{ secrets.SERVER_SSH_KEY }}
           script: |
             cd /home/magical-girls
+
+            # Login to GHCR for private image
+            echo ${{ secrets.GHCR_TOKEN }} | docker login ghcr.io -u xiaoyuyu6420 --password-stdin
+
             docker compose pull
             docker compose up -d --remove-orphans
             docker image prune -f
