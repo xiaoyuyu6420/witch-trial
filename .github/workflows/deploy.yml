@@ -133,10 +133,15 @@ jobs:
                     max-file: "2"
             COMPOSE_EOF
 
-            # Login to GHCR using token file
-            echo '${{ secrets.GHCR_TOKEN }}' > /tmp/ghcr-token
-            docker login ghcr.io -u xiaoyuyu6420 --password-stdin < /tmp/ghcr-token
-            rm -f /tmp/ghcr-token
+            # Write GHCR auth directly to docker config (bypass docker login)
+            GHCR_TOKEN='${{ secrets.GHCR_TOKEN }}'
+            if [ -z "$GHCR_TOKEN" ] || [ "$GHCR_TOKEN" = "''" ]; then
+              echo "ERROR: GHCR_TOKEN is empty. Check GitHub Secret."
+              exit 1
+            fi
+            mkdir -p ~/.docker
+            AUTH=$(printf '%s' "xiaoyuyu6420:$GHCR_TOKEN" | base64 -w 0)
+            printf '{"auths":{"ghcr.io":{"auth":"%s"}}}' "$AUTH" > ~/.docker/config.json
 
             docker compose pull
             docker compose up -d --remove-orphans
