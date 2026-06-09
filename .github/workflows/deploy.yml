@@ -55,8 +55,6 @@ jobs:
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
     environment: production
-    env:
-      GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
     steps:
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1
@@ -64,7 +62,6 @@ jobs:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SERVER_SSH_KEY }}
-          envs: GHCR_TOKEN
           command_timeout: 30m
           script: |
             mkdir -p /home/magical-girls/data /home/magical-girls/backups
@@ -72,8 +69,7 @@ jobs:
 
             # Check .env exists
             if [ ! -f .env ] || ! grep -q "ADMIN_PASSWORD" .env; then
-              echo "ERROR: Please create .env file with ADMIN_PASSWORD on server first"
-              echo "Run: echo 'ADMIN_PASSWORD=your_password' > /home/magical-girls/.env"
+              echo "ERROR: Create .env first: echo 'ADMIN_PASSWORD=xxx' > /home/magical-girls/.env"
               exit 1
             fi
 
@@ -137,8 +133,10 @@ jobs:
                     max-file: "2"
             COMPOSE_EOF
 
-            # Login to GHCR
-            echo "$GHCR_TOKEN" | docker login ghcr.io -u xiaoyuyu6420 --password-stdin
+            # Login to GHCR using token file
+            echo '${{ secrets.GHCR_TOKEN }}' > /tmp/ghcr-token
+            docker login ghcr.io -u xiaoyuyu6420 --password-stdin < /tmp/ghcr-token
+            rm -f /tmp/ghcr-token
 
             docker compose pull
             docker compose up -d --remove-orphans
