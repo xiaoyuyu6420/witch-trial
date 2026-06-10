@@ -142,7 +142,7 @@ Custom token-bucket implementation in `src/lib/rate-limit.ts`. Used on public en
 1. 代码推送到 Gitee（国内快）
 2. Gitee 自动同步到 GitHub
 3. GitHub Actions 构建镜像并推送到 Docker Hub
-4. 服务器通过镜像加速节点拉取镜像
+4. 服务器手动执行 `docker compose pull && up -d`（配置镜像加速后拉取快）
 
 ### Docker
 
@@ -162,42 +162,41 @@ Required GitHub Secrets:
 - `DOCKERHUB_USERNAME` — Docker Hub username
 - `DOCKERHUB_TOKEN` — Docker Hub Access Token
 
-### Server Setup
+**Free tier limits (private repo):**
+- 2000 build minutes/month
+- 500 MB artifact storage
+- 1 GB cache storage
+
+### Server Setup (一次性)
 
 ```bash
-# 创建目录
 mkdir -p /home/magical-girls && cd /home/magical-girls
 mkdir -p data backups
 
-# 创建 .env
+# 下载配置文件
+curl -o docker-compose.yml https://gitee.com/XYY526/magical-girls-witch-trial/raw/main/docker-compose.yml
+
+# 配置环境变量
 echo "ADMIN_PASSWORD=你的密码" > .env
 
-# 下载 docker-compose.yml
-curl -O https://gitee.com/XYY526/magical-girls-witch-trial/raw/main/docker-compose.yml
+# 配置 Docker 镜像加速（阿里云）
+sudo tee /etc/docker/daemon.json << 'EOF'
+{
+  "registry-mirrors": ["https://你的加速地址.mirror.aliyuncs.com"]
+}
+EOF
+sudo systemctl restart docker
 
-# 拉取并启动（配置好镜像加速后）
-docker compose pull
-docker compose up -d
+# 首次部署
+docker compose pull && docker compose up -d
 ```
 
-### 服务器镜像加速配置
-
-在服务器上配置 Docker 镜像加速（以阿里云为例）：
+### 日常更新
 
 ```bash
-# 编辑 /etc/docker/daemon.json
-{
-  "registry-mirrors": [
-    "https://你的加速地址.mirror.aliyuncs.com"
-  ]
-}
-
-# 重启 Docker
-sudo systemctl daemon-reload
-sudo systemctl restart docker
+cd /home/magical-girls
+docker compose pull && docker compose up -d
 ```
-
-阿里云镜像加速地址获取：https://cr.console.aliyun.com/cn-hangzhou/instances/mirrors
 
 ### Repositories
 
@@ -209,9 +208,9 @@ sudo systemctl restart docker
 
 ### Key Lessons
 
-- **No `--platform` in Dockerfile**: Triggers lint warnings.
-- **Bind mounts over named volumes**: Use `./data` and `./backups` so data lives under the deploy directory.
-- **镜像加速**: 国内服务器必须配置 Docker 镜像加速，否则拉取 Docker Hub 很慢。
+- **镜像加速必须配置**: 国内服务器不配置镜像加速，拉取 Docker Hub 会很慢或失败。
+- **No `--platform` in Dockerfile**: 触发 lint 警告。
+- **Bind mounts**: 数据目录用 bind mount (`./data`, `./backups`)，不用 named volume。
 
 ## Auto Sync to GitHub
 
