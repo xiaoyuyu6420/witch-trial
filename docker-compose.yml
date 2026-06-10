@@ -10,7 +10,7 @@ services:
       - ./data:/app/data
       - ./backups:/backups
     environment:
-      - DATABASE_URL=file:./data/witch-trial.db
+      - DATABASE_URL=file:/app/data/witch-trial.db
       - PORT=3001
       - ADMIN_PASSWORD=${ADMIN_PASSWORD:?Set ADMIN_PASSWORD in .env}
       - NODE_ENV=production
