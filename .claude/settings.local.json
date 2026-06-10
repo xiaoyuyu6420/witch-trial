@@ -18,9 +18,9 @@
         "hooks": [
           {
             "type": "command",
-            "command": "git diff --quiet 2>/dev/null && git diff --cached --quiet 2>/dev/null || (git add -A && git commit -m 'auto: sync' && git push) 2>/dev/null || true",
-            "timeout": 30,
-            "statusMessage": "Syncing to GitHub..."
+            "command": "git diff --quiet 2>/dev/null && git diff --cached --quiet 2>/dev/null || (git add -A && git commit -m 'auto: sync' && git push && git push gitee main) 2>/dev/null || true",
+            "timeout": 60,
+            "statusMessage": "Syncing to GitHub & Gitee..."
           }
         ]
       }
