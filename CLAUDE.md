@@ -133,6 +133,17 @@ Custom token-bucket implementation in `src/lib/rate-limit.ts`. Used on public en
 
 ## Deployment
 
+### Architecture
+
+```
+本地开发 → Gitee → 自动同步 → GitHub Actions → Docker Hub → 服务器(镜像加速)
+```
+
+1. 代码推送到 Gitee（国内快）
+2. Gitee 自动同步到 GitHub
+3. GitHub Actions 构建镜像并推送到 Docker Hub
+4. 服务器通过镜像加速节点拉取镜像
+
 ### Docker
 
 `Dockerfile` is a multi-stage build using Next.js standalone output. The container's entrypoint:
@@ -143,21 +154,64 @@ Custom token-bucket implementation in `src/lib/rate-limit.ts`. Used on public en
 
 Production container listens on `PORT=3001` (internal), exposed as `8091` externally. DB at `DATABASE_URL=file:./data/witch-trial.db`. Data and backups are bind-mounted from the host.
 
-Server setup (`/home/magical-girls/`):
-- `.env` file with `ADMIN_PASSWORD` must exist before deploy
-- `data/` and `backups/` directories created automatically
-- Deploy: `git pull && docker compose up -d --build`
+### CI/CD (GitHub Actions)
+
+`.github/workflows/deploy.yml` — triggered on push to `main`. Builds `linux/amd64` image and pushes to `xiaoyuyu123/magical-girls-witch-trial:latest` on Docker Hub.
+
+Required GitHub Secrets:
+- `DOCKERHUB_USERNAME` — Docker Hub username
+- `DOCKERHUB_TOKEN` — Docker Hub Access Token
+
+### Server Setup
+
+```bash
+# 创建目录
+mkdir -p /home/magical-girls && cd /home/magical-girls
+mkdir -p data backups
+
+# 创建 .env
+echo "ADMIN_PASSWORD=你的密码" > .env
+
+# 下载 docker-compose.yml
+curl -O https://gitee.com/XYY526/magical-girls-witch-trial/raw/main/docker-compose.yml
+
+# 拉取并启动（配置好镜像加速后）
+docker compose pull
+docker compose up -d
+```
+
+### 服务器镜像加速配置
+
+在服务器上配置 Docker 镜像加速（以阿里云为例）：
+
+```bash
+# 编辑 /etc/docker/daemon.json
+{
+  "registry-mirrors": [
+    "https://你的加速地址.mirror.aliyuncs.com"
+  ]
+}
+
+# 重启 Docker
+sudo systemctl daemon-reload
+sudo systemctl restart docker
+```
+
+阿里云镜像加速地址获取：https://cr.console.aliyun.com/cn-hangzhou/instances/mirrors
 
 ### Repositories
 
-- **GitHub**: https://github.com/xiaoyuyu6420/magical-girls-witch-trial (main, auto sync)
-- **Gitee**: https://gitee.com/XYY526/magical-girls-witch-trial (mirror, server pulls from here for speed)
+| 平台 | 地址 | 用途 |
+|---|---|---|
+| Gitee | https://gitee.com/XYY526/magical-girls-witch-trial | 主仓库，国内快 |
+| GitHub | https://github.com/xiaoyuyu6420/magical-girls-witch-trial | 自动同步，触发 CI/CD |
+| Docker Hub | https://hub.docker.com/r/xiaoyuyu123/magical-girls-witch-trial | 镜像仓库 |
 
 ### Key Lessons
 
 - **No `--platform` in Dockerfile**: Triggers lint warnings.
 - **Bind mounts over named volumes**: Use `./data` and `./backups` so data lives under the deploy directory.
-- **Build locally on server**: Pulling pre-built images from GHCR is too slow from China (~500KB/s for ~420MB). Build on server instead: `git pull → docker build → compose up`.
+- **镜像加速**: 国内服务器必须配置 Docker 镜像加速，否则拉取 Docker Hub 很慢。
 
 ## Auto Sync to GitHub
 

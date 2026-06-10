@@ -1,5 +1,6 @@
 services:
   magical-girls-witch-trial:
+    image: xiaoyuyu123/magical-girls-witch-trial:latest
     build: .
     container_name: magical-girls-witch-trial
     restart: unless-stopped
