@@ -75,7 +75,15 @@ docker compose pull && docker compose up -d
 ### 更新
 
 ```bash
-cd /home/magical-girls && docker compose pull && docker compose up -d
+curl -sSL https://raw.githubusercontent.com/xiaoyuyu6420/magical-girls-witch-trial/main/scripts/update.sh | bash
+```
+
+或手动更新：
+
+```bash
+cd /home/magical-girls
+curl -O https://raw.githubusercontent.com/xiaoyuyu6420/magical-girls-witch-trial/main/docker-compose.yml
+docker compose pull && docker compose up -d
 ```
 
 数据在 `./data/witch-trial.db`，备份每 6 小时自动跑一次，存在 `./backups/`，保留最近 30 份。

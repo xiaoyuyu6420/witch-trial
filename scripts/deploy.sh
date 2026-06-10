@@ -112,7 +112,7 @@ while [ $waited -lt $MAX_WAIT ]; do
     echo ""
     echo "回滚: cd $DEPLOY_DIR && ./scripts/deploy.sh --rollback"
     echo "恢复数据库: ./scripts/restore-backup.sh"
-    echo "日常更新: cd $DEPLOY_DIR && docker compose pull && docker compose up -d"
+    echo "日常更新: curl -sSL https://raw.githubusercontent.com/xiaoyuyu6420/magical-girls-witch-trial/main/scripts/update.sh | bash"
     exit 0
   fi
   sleep 2
