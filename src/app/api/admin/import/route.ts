@@ -136,7 +136,7 @@ export async function POST(req: NextRequest) {
             where: { id: existing.id },
             data: {
               dim: String(row.dim || ""),
-              type: String(row.type || "normal"),
+              type: (row.type as "normal" | "gate" | "trigger") || "normal",
               meta: String(row.meta ?? ""),
               text: String(row.text_zhCN || ""),
               translations: translationsStr,
@@ -182,7 +182,7 @@ export async function POST(req: NextRequest) {
             data: {
               order,
               dim: String(row.dim || ""),
-              type: String(row.type || "normal"),
+              type: (row.type as "normal" | "gate" | "trigger") || "normal",
               meta: String(row.meta || ""),
               text: String(row.text_zhCN || ""),
               translations: translationsStr,

@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { resultsRequestSchema } from "@/lib/schemas";
-import { match, type MatchInput } from "@/lib/match";
+import { match } from "@/lib/match";
 import { db } from "@/lib/db";
 import { rateLimit } from "@/lib/rate-limit";
+import { processAnswers } from "@/lib/answer-processor";
 
 export const dynamic = "force-dynamic";
 
@@ -48,35 +49,8 @@ export async function POST(req: NextRequest) {
     where: { id: { in: optionIds } },
     include: { question: { select: { id: true, dim: true, type: true } } },
   });
-  const optionMap = new Map(options.map((o) => [o.id, o]));
-  const validAnswers: typeof answers = [];
 
-  const dimScores: Record<string, number> = {};
-  let gateValue: MatchInput["gateValue"] | undefined;
-  let triggerFired: string | undefined;
-
-  for (const a of answers) {
-    const opt = optionMap.get(a.optionId);
-    if (!opt || opt.questionId !== a.questionId) continue;
-    validAnswers.push(a);
-
-    const qType = opt.question.type;
-    if (qType === "gate") {
-      const v = opt.value;
-      if (v === "destroy" || v === "endure" || v === "normal" || v === "normal_alt") {
-        gateValue = v;
-      }
-      continue;
-    }
-    if (qType === "trigger") {
-      if (opt.trigger) triggerFired = opt.trigger;
-      continue;
-    }
-
-    const dim = opt.question.dim;
-    if (!dim || dim === "GATE" || dim === "TRIGGER") continue;
-    dimScores[dim] = (dimScores[dim] ?? 0) + (opt.score ?? 0);
-  }
+  const { dimScores, gateValue, triggerFired, validAnswers } = processAnswers(answers, options);
 
   if (validAnswers.length !== answers.length) {
     return NextResponse.json(
@@ -85,9 +59,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const input: MatchInput = { dimScores, gateValue, triggerFired };
-  const dbTypes = await db.personalityType.findMany();
-  const result = match(input, dbTypes);
+  const result = match({ dimScores, gateValue, triggerFired }, await db.personalityType.findMany());
 
   const record = await db.testRecord.create({
     data: {
