@@ -6,6 +6,8 @@ import * as XLSX from "xlsx";
 export const dynamic = "force-dynamic";
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+const MAX_ROWS = 1000; // Total rows across all sheets
+const TRANSACTION_TIMEOUT_MS = 30_000; // 30s timeout for DB transaction
 
 const LOCALE_SUFFIX: Record<string, string> = {
   en: "en",
@@ -39,53 +41,68 @@ export async function POST(req: NextRequest) {
     const buf = Buffer.from(await file.arrayBuffer());
     const wb = XLSX.read(buf, { type: "buffer" });
 
+    // Parse sheet data outside transaction (raw parse only)
     const transLocales = ["en", "ja", "zh-TW"];
 
-    // Pre-parse all data outside transaction
-    const questionsData: { order: number; row: Record<string, unknown>; existing: { id: number; options: { id: number }[] } | null }[] = [];
-    const typesData: { code: string; row: Record<string, unknown>; existingId: number | null }[] = [];
-
-    // --- Parse Questions sheet ---
     const qSheet = wb.Sheets["Questions"];
-    if (qSheet) {
-      const qRows = XLSX.utils.sheet_to_json<Record<string, unknown>>(qSheet);
+    const qRows = qSheet
+      ? XLSX.utils.sheet_to_json<Record<string, unknown>>(qSheet)
+          .map((r) => {
+            const raw = parseRow(r);
+            return { raw, order: Number(raw.order) };
+          })
+          .filter((r) => r.order > 0 && !isNaN(r.order))
+      : [];
 
-      for (const rawRow of qRows) {
-        const row = parseRow(rawRow);
-        const order = Number(row.order);
-        if (isNaN(order)) continue;
-
-        const existing = await db.question.findFirst({
-          where: { order },
-          include: { options: { orderBy: { id: "asc" }, select: { id: true } } },
-        });
-
-        questionsData.push({ order, row, existing });
-      }
-    }
-
-    // --- Parse Types sheet ---
     const tSheet = wb.Sheets["Types"];
-    if (tSheet) {
-      const tRows = XLSX.utils.sheet_to_json<Record<string, unknown>>(tSheet);
+    const tRows = tSheet
+      ? XLSX.utils.sheet_to_json<Record<string, unknown>>(tSheet)
+          .map((r) => {
+            const raw = parseRow(r);
+            return { raw, code: String(raw.code || "").trim() };
+          })
+          .filter((r) => !!r.code)
+      : [];
 
-      for (const rawRow of tRows) {
-        const row = parseRow(rawRow);
-        const code = String(row.code || "").trim();
-        if (!code) continue;
-
-        const existing = await db.personalityType.findUnique({ where: { code }, select: { id: true } });
-        typesData.push({ code, row, existingId: existing?.id ?? null });
-      }
+    // Row limit check
+    const totalRows = qRows.length + tRows.length;
+    if (totalRows > MAX_ROWS) {
+      return NextResponse.json(
+        { error: `数据行数过多 (${totalRows})，限制最多 ${MAX_ROWS} 行` },
+        { status: 413 },
+      );
     }
 
-    // --- Execute all writes in a single transaction ---
+    if (totalRows === 0) {
+      return NextResponse.json({ ok: true, updatedQuestions: 0, updatedTypes: 0 });
+    }
+
+    console.log(`[admin/import] Processing ${qRows.length} questions, ${tRows.length} types`);
+
+    // Batch-fetch existing records (eliminates N+1 queries)
+    const questionOrders = qRows.map((r) => r.order);
+    const existingQuestions = await db.question.findMany({
+      where: { order: { in: questionOrders } },
+      include: { options: { orderBy: { id: "asc" }, select: { id: true } } },
+    });
+    const questionMap = new Map(existingQuestions.map((q) => [q.order, q]));
+
+    const typeCodes = tRows.map((r) => r.code);
+    const existingTypes = await db.personalityType.findMany({
+      where: { code: { in: typeCodes } },
+      select: { id: true, code: true },
+    });
+    const typeMap = new Map(existingTypes.map((t) => [t.code, t.id]));
+
+    // --- Execute all writes in a single transaction with timeout ---
     let updatedQuestions = 0;
     let updatedTypes = 0;
 
-    await db.$transaction(async (tx) => {
+    const transactionWork = db.$transaction(async (tx) => {
       // Process Questions
-      for (const { order, row, existing } of questionsData) {
+      for (const { order, raw: row } of qRows) {
+        const existing = questionMap.get(order) ?? null;
+
         const trans: Record<string, Record<string, string | string[]>> = {};
 
         for (const loc of transLocales) {
@@ -201,7 +218,9 @@ export async function POST(req: NextRequest) {
       }
 
       // Process Types
-      for (const { code, row, existingId } of typesData) {
+      for (const { code, raw: row } of tRows) {
+        const existingId = typeMap.get(code) ?? null;
+
         const trans: Record<string, Record<string, string>> = {};
         const fields = ["name", "subtitle", "slogan", "desc", "keywords"];
 
@@ -253,6 +272,14 @@ export async function POST(req: NextRequest) {
         updatedTypes++;
       }
     });
+
+    // Race transaction against timeout
+    const timeoutPromise = new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error("导入超时，请减少数据量后重试")), TRANSACTION_TIMEOUT_MS),
+    );
+    await Promise.race([transactionWork, timeoutPromise]);
+
+    console.log(`[admin/import] Done: ${updatedQuestions} questions, ${updatedTypes} types`);
 
     return NextResponse.json({ ok: true, updatedQuestions, updatedTypes });
   } catch (e) {
