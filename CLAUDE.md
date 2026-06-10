@@ -135,7 +135,7 @@ Custom token-bucket implementation in `src/lib/rate-limit.ts`. Used on public en
 
 ### Docker
 
-`Dockerfile` is a multi-stage build (no `--platform` flag; platform is specified in compose/buildx) using Next.js standalone output. The container's entrypoint:
+`Dockerfile` is a multi-stage build using Next.js standalone output. The container's entrypoint:
 1. Initializes DB (`prisma db push` + `prisma db seed` on first boot)
 2. Runs a backup via `scripts/backup.sh` (SQLite `.backup` → gzip, retains 30 copies)
 3. Starts `crond` for automatic backups every 6 hours
@@ -143,33 +143,21 @@ Custom token-bucket implementation in `src/lib/rate-limit.ts`. Used on public en
 
 Production container listens on `PORT=3001` (internal), exposed as `8091` externally. DB at `DATABASE_URL=file:./data/witch-trial.db`. Data and backups are bind-mounted from the host.
 
-### CI/CD (GitHub Actions)
-
-`.github/workflows/deploy.yml` — triggered on push to `main` or manual dispatch.
-
-**Job 1: build-and-push** — Builds `linux/amd64` Docker image, pushes to `ghcr.io/xiaoyuyu6420/magical-girls-witch-trial:latest`. Uses GHA cache.
-
-**Job 2: deploy** — SSH into server, writes `docker-compose.yml` and GHCR auth config, then `docker compose pull && up -d`.
-
-Required GitHub Secrets:
-- `SERVER_HOST` — Production server IP
-- `SERVER_USER` — SSH username (must be in `docker` group on server)
-- `SERVER_SSH_KEY` — SSH private key
-- `GHCR_TOKEN` — GitHub PAT with `read:packages` scope (for private repo image pull)
-
-Server prerequisites (`/home/magical-girls/`):
+Server setup (`/home/magical-girls/`):
 - `.env` file with `ADMIN_PASSWORD` must exist before deploy
-- `data/` and `backups/` directories created automatically by deploy script
+- `data/` and `backups/` directories created automatically
+- Deploy: `git pull && docker compose up -d --build`
+
+### Repositories
+
+- **GitHub**: https://github.com/xiaoyuyu6420/magical-girls-witch-trial (main, auto sync)
+- **Gitee**: https://gitee.com/XYY526/magical-girls-witch-trial (mirror, server pulls from here for speed)
 
 ### Key Lessons
 
-- **No `sudo` with `docker login`**: `echo token | sudo docker login` breaks the stdin pipe. The SSH user must be in the `docker` group instead.
-- **No `--platform` in Dockerfile**: Triggers lint warnings. Specify platform in compose or buildx instead.
-- **GHCR auth via config.json**: `docker login` fails with "Cannot perform an interactive login from a non TTY device" over SSH. Write `~/.docker/config.json` directly with base64-encoded credentials.
-- **Private repo image pull**: GHCR images from private repos require authentication on the server. The deploy script writes auth config before `docker compose pull`.
-- **Image size + server bandwidth**: The image is ~420MB. With slow server download speeds (~500KB/s), `command_timeout` must be set to 60m in the SSH action.
-- **`appleboy/ssh-action` `envs` parameter**: Environment variables passed via `envs` are unreliable for secrets. Use `${{ secrets.XXX }}` directly in the script instead.
-- **Bind mounts over named volumes**: Use `./data` and `./backups` (relative bind mounts) so data lives under the deploy directory, not in `/var/lib/docker/volumes/`.
+- **No `--platform` in Dockerfile**: Triggers lint warnings.
+- **Bind mounts over named volumes**: Use `./data` and `./backups` so data lives under the deploy directory.
+- **Build locally on server**: Pulling pre-built images from GHCR is too slow from China (~500KB/s for ~420MB). Build on server instead: `git pull → docker build → compose up`.
 
 ## Auto Sync to GitHub
 

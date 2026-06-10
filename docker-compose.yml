@@ -1,10 +1,6 @@
 services:
   magical-girls-witch-trial:
-    image: ghcr.io/xiaoyuyu6420/magical-girls-witch-trial:latest
-    build:
-      context: .
-      platforms:
-        - linux/amd64
+    build: .
     container_name: magical-girls-witch-trial
     restart: unless-stopped
     ports:
