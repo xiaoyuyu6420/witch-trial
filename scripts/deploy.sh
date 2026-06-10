@@ -3,6 +3,8 @@ set -e
 
 DEPLOY_DIR="/home/magical-girls"
 GITHUB_RAW="https://raw.githubusercontent.com/xiaoyuyu6420/magical-girls-witch-trial/main"
+# 国内镜像加速
+GITHUB_PROXY="https://ghproxy.net/https://raw.githubusercontent.com/xiaoyuyu6420/magical-girls-witch-trial/main"
 
 echo "=== Magical Girls Witch Trial 部署脚本 ==="
 
@@ -13,7 +15,10 @@ cd $DEPLOY_DIR
 
 # 2. 下载 docker-compose.yml
 echo "[2/4] 下载 docker-compose.yml..."
-curl -sSf -o docker-compose.yml "$GITHUB_RAW/docker-compose.yml"
+if ! curl -sSf --connect-timeout 10 -o docker-compose.yml "$GITHUB_RAW/docker-compose.yml" 2>/dev/null; then
+  echo "  直连失败，尝试镜像加速..."
+  curl -sSf --connect-timeout 10 -o docker-compose.yml "$GITHUB_PROXY/docker-compose.yml"
+fi
 
 # 3. 检查 .env
 if [ ! -f .env ] || ! grep -q "ADMIN_PASSWORD" .env; then
