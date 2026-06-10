@@ -5,11 +5,30 @@ DEPLOY_DIR="/home/magical-girls"
 GITHUB_RAW="https://raw.githubusercontent.com/xiaoyuyu6420/magical-girls-witch-trial/main"
 GITHUB_PROXY="https://ghfast.top/https://raw.githubusercontent.com/xiaoyuyu6420/magical-girls-witch-trial/main"
 
+mkdir -p "$DEPLOY_DIR"
 cd "$DEPLOY_DIR"
 
 echo "=== 更新 Magical Girls Witch Trial ==="
 
-# 1. 备份并更新 docker-compose.yml
+# 1. 检查 .env
+if [ ! -f .env ] || ! grep -q "^ADMIN_PASSWORD=.\+" .env; then
+  echo ""
+  read -sp "请设置管理员密码: " password
+  echo ""
+  if [ -z "$password" ]; then
+    echo "错误: 密码不能为空"
+    exit 1
+  fi
+  {
+    echo "ADMIN_PASSWORD=$password"
+    grep -v "^ADMIN_PASSWORD=" .env 2>/dev/null || true
+  } > .env.tmp && mv .env.tmp .env
+  echo ".env 已保存"
+else
+  echo ".env 已存在，跳过"
+fi
+
+# 2. 备份并更新 docker-compose.yml
 if [ -f docker-compose.yml ]; then
   cp docker-compose.yml "docker-compose.yml.backup.$(date +%Y%m%d%H%M%S)"
 fi
@@ -20,7 +39,7 @@ if ! curl -sSf --connect-timeout 10 -o docker-compose.yml "$GITHUB_RAW/docker-co
   curl -sSf --connect-timeout 10 -o docker-compose.yml "$GITHUB_PROXY/docker-compose.yml"
 fi
 
-# 2. 拉取镜像并重启
+# 3. 拉取镜像并重启
 echo "拉取镜像..."
 docker compose pull
 
