@@ -133,13 +133,49 @@ Custom token-bucket implementation in `src/lib/rate-limit.ts`. Used on public en
 
 ## Deployment
 
-`Dockerfile` is a multi-stage `linux/amd64` build using Next.js standalone output. The container's entrypoint runs `prisma db push --accept-data-loss` and `prisma db seed` before `node server.js`, so the DB self-initializes on first boot. Production container listens on `PORT=3001`, DB at `DATABASE_URL=file:./prisma/data/witch-trial.db`.
+### Docker
+
+`Dockerfile` is a multi-stage build (no `--platform` flag; platform is specified in compose/buildx) using Next.js standalone output. The container's entrypoint:
+1. Initializes DB (`prisma db push` + `prisma db seed` on first boot)
+2. Runs a backup via `scripts/backup.sh` (SQLite `.backup` → gzip, retains 30 copies)
+3. Starts `crond` for automatic backups every 6 hours
+4. Launches `node server.js`
+
+Production container listens on `PORT=3001` (internal), exposed as `8091` externally. DB at `DATABASE_URL=file:./data/witch-trial.db`. Data and backups are bind-mounted from the host.
+
+### CI/CD (GitHub Actions)
+
+`.github/workflows/deploy.yml` — triggered on push to `main` or manual dispatch.
+
+**Job 1: build-and-push** — Builds `linux/amd64` Docker image, pushes to `ghcr.io/xiaoyuyu6420/magical-girls-witch-trial:latest`. Uses GHA cache.
+
+**Job 2: deploy** — SSH into server, writes `docker-compose.yml` and GHCR auth config, then `docker compose pull && up -d`.
+
+Required GitHub Secrets:
+- `SERVER_HOST` — Production server IP
+- `SERVER_USER` — SSH username (must be in `docker` group on server)
+- `SERVER_SSH_KEY` — SSH private key
+- `GHCR_TOKEN` — GitHub PAT with `read:packages` scope (for private repo image pull)
+
+Server prerequisites (`/home/magical-girls/`):
+- `.env` file with `ADMIN_PASSWORD` must exist before deploy
+- `data/` and `backups/` directories created automatically by deploy script
+
+### Key Lessons
+
+- **No `sudo` with `docker login`**: `echo token | sudo docker login` breaks the stdin pipe. The SSH user must be in the `docker` group instead.
+- **No `--platform` in Dockerfile**: Triggers lint warnings. Specify platform in compose or buildx instead.
+- **GHCR auth via config.json**: `docker login` fails with "Cannot perform an interactive login from a non TTY device" over SSH. Write `~/.docker/config.json` directly with base64-encoded credentials.
+- **Private repo image pull**: GHCR images from private repos require authentication on the server. The deploy script writes auth config before `docker compose pull`.
+- **Image size + server bandwidth**: The image is ~420MB. With slow server download speeds (~500KB/s), `command_timeout` must be set to 60m in the SSH action.
+- **`appleboy/ssh-action` `envs` parameter**: Environment variables passed via `envs` are unreliable for secrets. Use `${{ secrets.XXX }}` directly in the script instead.
+- **Bind mounts over named volumes**: Use `./data` and `./backups` (relative bind mounts) so data lives under the deploy directory, not in `/var/lib/docker/volumes/`.
 
 ## Auto Sync to GitHub
 
 A Stop hook is configured in `.claude/settings.local.json` that automatically commits and pushes to GitHub at the end of each conversation if there are uncommitted changes. This ensures the Docker build server can always pull the latest code.
 
-- **Repository**: https://github.com/xiaoyuyu6420/witch-trial
+- **Repository**: https://github.com/xiaoyuyu6420/magical-girls-witch-trial
 - **Branch**: main
 - **Hook trigger**: End of each conversation (Stop event)
 - **Behavior**: If `git diff` shows changes, runs `git add -A && git commit -m 'auto: sync' && git push`
