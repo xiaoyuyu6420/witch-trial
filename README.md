@@ -132,9 +132,29 @@ src/components/     前端组件
 src/data/           题库和人格定义（seed 用）
 src/i18n/           多语言（中/繁/英/日）
 src/lib/match.ts    匹配算法
+src/lib/answer-processor.ts  答案处理（提取自 API 路由）
 prisma/             数据库 schema
 scripts/            部署和备份脚本
 ```
+
+## 代码质量
+
+### 已完成优化
+
+- ✅ **提取重复代码** — `match` 和 `results` 路由中的答案处理逻辑提取到 `src/lib/answer-processor.ts`，减少 ~70 行重复代码
+- ✅ **Prisma 枚举类型** — `Question.type` 从 `String` 改为 `enum QuestionType`，增强类型安全
+
+### 待改进
+
+| 优先级 | 问题 | 说明 |
+|--------|------|------|
+| 🔴 高 | 密码明文传输/存储 | 生产环境建议使用 JWT 或 session-based 认证 |
+| 🔴 高 | IP 获取可伪造 | `x-forwarded-for` 可被客户端绕过限流 |
+| 🔴 高 | Import API DoS | 大文件导入可能消耗大量内存，建议添加行数限制 |
+| 🟡 中 | Rate Limit 内存存储 | 单实例可接受，多实例需改用 Redis |
+| 🟡 中 | Admin 页面过大 | ~600行，建议拆分组件 |
+| 🟡 中 | API 错误返回不详细 | 生产环境只返回通用错误，调试困难 |
+| 🟢 低 | 测试覆盖有限 | 目前只测了 match.ts，建议添加更多测试 |
 
 ## 仓库
 
