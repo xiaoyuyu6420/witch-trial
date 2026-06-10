@@ -136,13 +136,12 @@ Custom token-bucket implementation in `src/lib/rate-limit.ts`. Used on public en
 ### Architecture
 
 ```
-本地开发 → Gitee → 自动同步 → GitHub Actions → Docker Hub → 服务器(镜像加速)
+本地开发 → GitHub → GitHub Actions → Docker Hub → 服务器(镜像加速)
 ```
 
-1. 代码推送到 Gitee（国内快）
-2. Gitee 自动同步到 GitHub
-3. GitHub Actions 构建镜像并推送到 Docker Hub
-4. 服务器手动执行 `docker compose pull && up -d`（配置镜像加速后拉取快）
+1. 代码推送到 GitHub
+2. GitHub Actions 构建镜像并推送到 Docker Hub
+3. 服务器执行 `docker compose pull && up -d`（需配置阿里云镜像加速）
 
 ### Docker
 
@@ -174,7 +173,7 @@ mkdir -p /home/magical-girls && cd /home/magical-girls
 mkdir -p data backups
 
 # 下载配置文件
-curl -o docker-compose.yml https://gitee.com/XYY526/magical-girls-witch-trial/raw/main/docker-compose.yml
+curl -o docker-compose.yml https://raw.githubusercontent.com/xiaoyuyu6420/magical-girls-witch-trial/main/docker-compose.yml
 
 # 配置环境变量
 echo "ADMIN_PASSWORD=你的密码" > .env
@@ -202,8 +201,7 @@ docker compose pull && docker compose up -d
 
 | 平台 | 地址 | 用途 |
 |---|---|---|
-| Gitee | https://gitee.com/XYY526/magical-girls-witch-trial | 主仓库，国内快 |
-| GitHub | https://github.com/xiaoyuyu6420/magical-girls-witch-trial | 自动同步，触发 CI/CD |
+| GitHub | https://github.com/xiaoyuyu6420/magical-girls-witch-trial | 主仓库，触发 CI/CD |
 | Docker Hub | https://hub.docker.com/r/xiaoyuyu123/magical-girls-witch-trial | 镜像仓库 |
 
 ### Key Lessons

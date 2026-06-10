@@ -2,7 +2,7 @@
 set -e
 
 DEPLOY_DIR="/home/magical-girls"
-GITEE_RAW="https://gitee.com/XYY526/magical-girls-witch-trial/raw/main"
+GITHUB_RAW="https://raw.githubusercontent.com/xiaoyuyu6420/magical-girls-witch-trial/main"
 
 echo "=== Magical Girls Witch Trial 部署脚本 ==="
 
@@ -13,7 +13,7 @@ cd $DEPLOY_DIR
 
 # 2. 下载 docker-compose.yml
 echo "[2/5] 下载 docker-compose.yml..."
-curl -sSf -o docker-compose.yml "$GITEE_RAW/docker-compose.yml"
+curl -sSf -o docker-compose.yml "$GITHUB_RAW/docker-compose.yml"
 
 # 3. 检查 .env
 if [ ! -f .env ] || ! grep -q "ADMIN_PASSWORD" .env; then

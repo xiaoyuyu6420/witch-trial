@@ -41,7 +41,7 @@
 需要 Node.js 20+。
 
 ```bash
-git clone https://gitee.com/XYY526/magical-girls-witch-trial.git
+git clone https://github.com/xiaoyuyu6420/magical-girls-witch-trial.git
 cd magical-girls-witch-trial
 npm install
 cp .env.example .env
@@ -58,7 +58,7 @@ npm run dev
 服务器上执行：
 
 ```bash
-curl -sSL https://gitee.com/XYY526/magical-girls-witch-trial/raw/main/scripts/deploy.sh | bash
+curl -sSL https://raw.githubusercontent.com/xiaoyuyu6420/magical-girls-witch-trial/main/scripts/deploy.sh | bash
 ```
 
 脚本会创建目录、下载 `docker-compose.yml`、引导你设置密码、配置镜像加速，然后拉起容器。
@@ -67,7 +67,7 @@ curl -sSL https://gitee.com/XYY526/magical-girls-witch-trial/raw/main/scripts/de
 
 ```bash
 mkdir -p /home/magical-girls/{data,backups} && cd /home/magical-girls
-curl -o docker-compose.yml https://gitee.com/XYY526/magical-girls-witch-trial/raw/main/docker-compose.yml
+curl -o docker-compose.yml https://raw.githubusercontent.com/xiaoyuyu6420/magical-girls-witch-trial/main/docker-compose.yml
 echo "ADMIN_PASSWORD=你的密码" > .env
 docker compose pull && docker compose up -d
 ```
@@ -115,13 +115,13 @@ cd /home/magical-girls && docker compose pull && docker compose up -d
 
 > 特殊人格有隐藏触发条件，不是随机出的。
 
-## CI/CD 架构
+## CI/CD
 
 ```
-Gitee（主仓库）→ 自动同步 → GitHub → Actions 构建 → Docker Hub → 服务器拉取
+push to GitHub → Actions 自动构建 → 推送到 Docker Hub → 服务器 docker compose pull
 ```
 
-服务器在国内，通过阿里云镜像加速拉取 Docker Hub 镜像。推送代码到 Gitee 就会触发整条链路。
+服务器在国内，需要配置阿里云镜像加速拉取 Docker Hub 镜像。一键部署脚本会引导你配置。
 
 ## 目录结构
 
@@ -140,7 +140,6 @@ scripts/            部署和备份脚本
 
 | 平台 | 地址 |
 |---|---|
-| Gitee | https://gitee.com/XYY526/magical-girls-witch-trial |
 | GitHub | https://github.com/xiaoyuyu6420/magical-girls-witch-trial |
 | Docker Hub | https://hub.docker.com/r/xiaoyuyu123/magical-girls-witch-trial |
 
