@@ -13,8 +13,13 @@ echo "[1/3] 创建目录..."
 mkdir -p $DEPLOY_DIR/{data,backups}
 cd $DEPLOY_DIR
 
-# 2. 下载 docker-compose.yml
+# 2. 备份并下载 docker-compose.yml
 echo "[2/3] 下载 docker-compose.yml..."
+if [ -f docker-compose.yml ]; then
+  backup_name="docker-compose.yml.backup.$(date +%Y%m%d%H%M%S)"
+  cp docker-compose.yml "$backup_name"
+  echo "  已备份: $backup_name"
+fi
 if ! curl -sSf --connect-timeout 10 -o docker-compose.yml "$GITHUB_RAW/docker-compose.yml" 2>/dev/null; then
   echo "  直连失败，尝试镜像加速..."
   curl -sSf --connect-timeout 10 -o docker-compose.yml "$GITHUB_PROXY/docker-compose.yml"
