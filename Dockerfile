@@ -10,7 +10,7 @@ FROM node:20-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 
-RUN apk update && apk add --no-cache sqlite
+RUN apk update && apk add --no-cache sqlite dcron
 
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
@@ -24,10 +24,13 @@ RUN chmod +x /app/scripts/backup.sh
 
 RUN echo '#!/bin/sh' > /app/entrypoint.sh && \
     echo 'set -e' >> /app/entrypoint.sh && \
-    echo 'mkdir -p /app/data' >> /app/entrypoint.sh && \
+    echo 'mkdir -p /app/data /backups' >> /app/entrypoint.sh && \
     echo 'if [ ! -f /app/data/witch-trial.db ]; then INIT_DB=1; fi' >> /app/entrypoint.sh && \
     echo 'npx prisma db push' >> /app/entrypoint.sh && \
     echo 'if [ "$INIT_DB" = "1" ]; then npx prisma db seed; fi' >> /app/entrypoint.sh && \
+    echo '/app/scripts/backup.sh' >> /app/entrypoint.sh && \
+    echo 'echo "0 */6 * * * /app/scripts/backup.sh" | crontab -' >> /app/entrypoint.sh && \
+    echo 'crond' >> /app/entrypoint.sh && \
     echo 'exec node server.js' >> /app/entrypoint.sh && \
     chmod +x /app/entrypoint.sh
 

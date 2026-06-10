@@ -106,31 +106,6 @@ jobs:
                   options:
                     max-size: "10m"
                     max-file: "3"
-
-              backup:
-                image: ghcr.io/xiaoyuyu6420/magical-girls-witch-trial:latest
-                container_name: magical-girls-backup
-                restart: unless-stopped
-                volumes:
-                  - ./data:/app/data:ro
-                  - ./backups:/backups
-                entrypoint: ["/bin/sh", "-c"]
-                command:
-                  - |
-                    echo "Backup service started. Running every 6 hours."
-                    while true; do
-                      /app/scripts/backup.sh
-                      sleep 21600
-                    done
-                deploy:
-                  resources:
-                    limits:
-                      memory: 64M
-                logging:
-                  driver: json-file
-                  options:
-                    max-size: "5m"
-                    max-file: "2"
             COMPOSE_EOF
 
             # Write GHCR auth directly to docker config (bypass docker login)
