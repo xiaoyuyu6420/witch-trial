@@ -4,7 +4,7 @@ set -e
 DEPLOY_DIR="/home/magical-girls"
 GITHUB_RAW="https://raw.githubusercontent.com/xiaoyuyu6420/magical-girls-witch-trial/main"
 # 国内镜像加速
-GITHUB_PROXY="https://ghproxy.net/https://raw.githubusercontent.com/xiaoyuyu6420/magical-girls-witch-trial/main"
+GITHUB_PROXY="https://ghfast.top/https://raw.githubusercontent.com/xiaoyuyu6420/magical-girls-witch-trial/main"
 
 echo "=== Magical Girls Witch Trial 部署脚本 ==="
 
