@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { checkAdminAuth } from "@/lib/admin-auth";
+import { apiError } from "@/lib/utils";
 import * as XLSX from "xlsx";
 
 export const dynamic = "force-dynamic";
@@ -100,6 +101,6 @@ export async function GET(req: NextRequest) {
     });
   } catch (e) {
     console.error(e);
-    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+    return apiError("Template generation failed", 500, e);
   }
 }

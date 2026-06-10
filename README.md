@@ -149,18 +149,19 @@ scripts/            部署和备份脚本
 
 - ✅ **提取重复代码** — `match` 和 `results` 路由中的答案处理逻辑提取到 `src/lib/answer-processor.ts`，减少 ~70 行重复代码
 - ✅ **Prisma 枚举类型** — `Question.type` 从 `String` 改为 `enum QuestionType`，增强类型安全
+- ✅ **Admin 认证安全** — 使用 `crypto.timingSafeEqual` 防止时序攻击，添加 admin 登录限流（10次/分钟/IP）
+- ✅ **IP 获取可伪造修复** — 新增 `TRUSTED_PROXY` 环境变量，直连模式忽略 `x-forwarded-for`
+- ✅ **Import API 防护** — 限制文件 5MB、行数 1000、事务超时 30s
+- ✅ **API 错误信息** — 统一 `apiError()` 工具函数，开发模式返回详细错误，生产环境仅返回通用信息
+- ✅ **Zod v4 弃用修复** — 全部 API 路由的 `.flatten()` 改为 `.issues`
+- ✅ **测试覆盖** — 补充 `answer-processor` 和 `rate-limit` 测试，35 个用例
 
 ### 待改进
 
 | 优先级 | 问题 | 说明 |
 |--------|------|------|
-| 🔴 高 | 密码明文传输/存储 | 生产环境建议使用 JWT 或 session-based 认证 |
-| 🔴 高 | IP 获取可伪造 | `x-forwarded-for` 可被客户端绕过限流 |
-| 🔴 高 | Import API DoS | 大文件导入可能消耗大量内存，建议添加行数限制 |
 | 🟡 中 | Rate Limit 内存存储 | 单实例可接受，多实例需改用 Redis |
-| 🟡 中 | Admin 页面过大 | ~600行，建议拆分组件 |
-| 🟡 中 | API 错误返回不详细 | 生产环境只返回通用错误，调试困难 |
-| 🟢 低 | 测试覆盖有限 | 目前只测了 match.ts，建议添加更多测试 |
+| 🟢 低 | 密码仍为 header 明文 | 建议 HTTPS 部署；后续可改用 JWT/session |
 
 ## 仓库
 

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { checkAdminAuth } from "@/lib/admin-auth";
 import { adminTypeBulkSchema } from "@/lib/schemas";
+import { apiError } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
@@ -13,7 +14,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json(types);
   } catch (e) {
     console.error(e);
-    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+    return apiError("Failed to update types", 500, e);
   }
 }
 
@@ -64,6 +65,6 @@ export async function PUT(req: NextRequest) {
     return NextResponse.json({ ok: true });
   } catch (e) {
     console.error(e);
-    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+    return apiError("Failed to update types", 500, e);
   }
 }
