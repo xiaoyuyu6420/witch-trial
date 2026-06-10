@@ -1,6 +1,6 @@
 <div align="center">
 
-# 魔女审判
+# 魔法少女的魔女审判-测测你更像哪个角色
 
 **WITCH TRIAL · MAGICAL GIRL PERSONALITY QUIZ**
 
@@ -8,8 +8,6 @@
 [![React](https://img.shields.io/badge/React-19-61DAFB?logo=react)](https://react.dev/)
 [![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?logo=docker)](https://hub.docker.com/r/xiaoyuyu123/magical-girls-witch-trial)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-
-扮演受审的魔女，回答 26 道情境题，看看你会被审判为谁。
 
 </div>
 
