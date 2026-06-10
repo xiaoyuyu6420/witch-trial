@@ -69,15 +69,26 @@ jobs:
 
             # Check .env exists
             if [ ! -f .env ] || ! grep -q "ADMIN_PASSWORD" .env; then
-              echo "ERROR: Create .env first: echo 'ADMIN_PASSWORD=xxx' > /home/magical-girls/.env"
+              echo "ERROR: Create .env first"
               exit 1
             fi
 
-            # Create docker-compose.yml
+            # Clone or pull from Gitee
+            if [ ! -d .git ]; then
+              git clone https://XYY526:${{ secrets.GITEE_TOKEN }}@gitee.com/XYY526/magical-girls-witch-trial.git .
+            else
+              git pull https://XYY526:${{ secrets.GITEE_TOKEN }}@gitee.com/XYY526/magical-girls-witch-trial.git main
+            fi
+
+            # Build image locally
+            docker build -t magical-girls-witch-trial:latest .
+
+            # Write docker-compose.yml
             cat > docker-compose.yml << 'COMPOSE_EOF'
             services:
               magical-girls-witch-trial:
-                image: ghcr.io/xiaoyuyu6420/magical-girls-witch-trial:latest
+                image: magical-girls-witch-trial:latest
+                build: .
                 container_name: magical-girls-witch-trial
                 restart: unless-stopped
                 ports:
@@ -108,17 +119,6 @@ jobs:
                     max-file: "3"
             COMPOSE_EOF
 
-            # Write GHCR auth directly to docker config (bypass docker login)
-            GHCR_TOKEN='${{ secrets.GHCR_TOKEN }}'
-            if [ -z "$GHCR_TOKEN" ] || [ "$GHCR_TOKEN" = "''" ]; then
-              echo "ERROR: GHCR_TOKEN is empty. Check GitHub Secret."
-              exit 1
-            fi
-            mkdir -p ~/.docker
-            AUTH=$(printf '%s' "xiaoyuyu6420:$GHCR_TOKEN" | base64 -w 0)
-            printf '{"auths":{"ghcr.io":{"auth":"%s"}}}' "$AUTH" > ~/.docker/config.json
-
-            docker compose pull
-            docker compose up -d --remove-orphans
+            docker compose up -d --build --remove-orphans
             docker image prune -f
             echo "Deployed at $(date)"
