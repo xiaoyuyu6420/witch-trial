@@ -1120,6 +1120,7 @@
       }
       centerX = width * 0.5;
       centerY = width < 768 ? height * 0.47 : height * 0.34;
+      updateRingParams();
       seedDashes();
     }
     window.addEventListener('resize', resize);
@@ -1140,10 +1141,21 @@
 
     // Ring band parameters. Visible region spans ≈ [R-2W, R+W] from cursor.
     // R=240, W=200 → visible from 0 to ~440 px; peak ring at 240 px.
-    const RING_R = 240;
-    const RING_W = 200;
-    const RING_W2 = 90;    // inner sharper ring → "core glow"
-    const INV_R = 1 / RING_R;
+    // Ring band parameters — responsive to screen size
+    let ringR = 240, ringW = 200, ringW2 = 90;
+    function updateRingParams() {
+      const minDim = Math.min(width, height);
+      const scale = minDim < 500 ? 0.5 : minDim < 768 ? 0.7 : 1;
+      ringR  = 240 * scale;
+      ringW  = 200 * scale;
+      ringW2 =  90 * scale;
+    }
+
+    // Expand animation — ring grows outward from center on page load
+    let ringExpand = 0;
+    const EXPAND_DURATION = 2500;
+    let expandStartTime = 0;
+    function startRingExpand() { expandStartTime = performance.now(); }
 
     function smoothstep(e0, e1, x) {
       if (x <= e0) return 0;
@@ -1231,9 +1243,21 @@
       ringCenter.y += (targetY - ringCenter.y) * 0.03;
 
       const mx = ringCenter.x, my = ringCenter.y;
-      const tSlow = time * 0.00045;       // noise evolution rate (slow)
-      const tFast = time * 0.0014;        // mid-noise rate
-      const tColor = time * 0.00035;      // color noise rate
+
+      // Expand progress — ring unfolds outward from center
+      if (expandStartTime > 0 && ringExpand < 1) {
+        const t = Math.min(1, (time - expandStartTime) / EXPAND_DURATION);
+        ringExpand = 1 - Math.pow(1 - t, 3); // easeOutCubic
+      }
+      const eR  = ringR  * ringExpand;
+      const eW  = ringW  * ringExpand;
+      const eW2 = ringW2 * ringExpand;
+
+      // Mobile animation runs slower for dramatic unfold effect
+      const mobileSlow = width < 768 ? 0.6 : 1;
+      const tSlow = time * 0.00045 * mobileSlow;
+      const tFast = time * 0.0014 * mobileSlow;
+      const tColor = time * 0.00035 * mobileSlow;
 
       for (let i = 0; i < dashes.length; i++) {
         const d = dashes[i];
@@ -1243,11 +1267,11 @@
         const dist = Math.sqrt(dx * dx + dy * dy);
 
         // Inner & outer smoothstep bands → smooth donut with soft core.
-        const tBand  = smoothstep(RING_R - RING_W  * 2, RING_R, dist) - smoothstep(RING_R, RING_R + RING_W,  dist);
-        const tCore  = smoothstep(RING_R - RING_W2 * 2, RING_R, dist) - smoothstep(RING_R, RING_R + RING_W2, dist);
+        const tBand  = smoothstep(eR - eW  * 2, eR, dist) - smoothstep(eR, eR + eW,  dist);
+        const tCore  = smoothstep(eR - eW2 * 2, eR, dist) - smoothstep(eR, eR + eW2, dist);
         let t = tBand * tBand + tCore * tCore * tCore * 3;
         // Slight glow inside the ring too (so right at cursor it isn't dead-zero).
-        t += smoothstep(RING_R + RING_W2, RING_R, dist) * 0.4;
+        t += smoothstep(eR + eW2, eR, dist) * 0.4;
         if (t < 0.04 && d.scale < 0.04) continue;
 
         // Smooth scale toward target (~5-frame settle) — gives soft fade-in/out.
@@ -1264,7 +1288,7 @@
         let py = d.refY + lowY * 34 + midY * 6;
 
         // Sin wave displacement on top — small lateral wiggle that scales with distance to ring.
-        const distNorm = Math.min(dist * INV_R, 1);
+        const distNorm = eR > 0 ? Math.min(dist / eR, 1) : 0;
         px += Math.sin(d.refX * 0.024 + time * 0.0042) * 4 * distNorm;
         py += Math.cos(d.refY * 0.024 + time * 0.0031) * 4 * distNorm;
 
@@ -1382,6 +1406,7 @@
           scrambler.setText('ACCESS GRANTED').then(() => {
             setTimeout(() => {
               document.getElementById('loader').style.transform = 'translateY(-100%)';
+              startRingExpand();
 
               const scrambles = document.querySelectorAll('[data-scramble]');
               scrambles.forEach((el, index) => {
@@ -1561,12 +1586,12 @@
     function enterFullscreen() {
       requestElementFullscreen(document.documentElement);
       document.getElementById('fs-prompt').style.display = 'none';
-      localStorage.setItem('witch-trial-fs-prompted', 'true');
+      localStorage.setItem('witch-trial-fs-prompted', Date.now().toString());
     }
 
     function skipFullscreen() {
       document.getElementById('fs-prompt').style.display = 'none';
-      localStorage.setItem('witch-trial-fs-prompted', 'true');
+      localStorage.setItem('witch-trial-fs-prompted', Date.now().toString());
     }
 
     function updateFullscreenIcon() {
@@ -1581,10 +1606,13 @@
     document.addEventListener('MSFullscreenChange', updateFullscreenIcon);
 
     // Show fullscreen prompt on all devices that aren't already fullscreen
+    // Re-show after 5 minutes since last prompt
     document.addEventListener('DOMContentLoaded', () => {
-      const alreadyPrompted = localStorage.getItem('witch-trial-fs-prompted');
+      const lastPrompted = localStorage.getItem('witch-trial-fs-prompted');
       const isFullscreen = isFullscreenActive();
-      if (!alreadyPrompted && !isFullscreen) {
+      const fiveMinAgo = Date.now() - 5 * 60 * 1000;
+      const shouldShow = !lastPrompted || parseInt(lastPrompted) < fiveMinAgo;
+      if (shouldShow && !isFullscreen) {
         setTimeout(() => {
           document.getElementById('fs-prompt').style.display = 'flex';
         }, 2000);
